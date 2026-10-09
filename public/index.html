@@ -1127,43 +1127,85 @@
 
 <!-- Модальне вікно "Про проєкт / Відгук" -->
   <div class="modal-overlay" id="aboutModal">
-    <div class="modal-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+    <div class="modal-box" style="max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <h3 style="margin: 0; font-size: 1.25rem;">Про проєкт LightNet</h3>
         <span style="background: rgba(46, 213, 115, 0.15); color: #2ed573; border: 1px solid rgba(46, 213, 115, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 700;">v1.0 • Ітерація 1</span>
       </div>
 
-      <p>
-        Привіт! Цей проєкт повністю створений <strong>однією людиною</strong> з метою зробити моніторинг графіків відключень не просто інформативним, а по-справжньому естетичним, затишним та зручним для кожного.
+      <p style="font-size: 0.88rem; color: #a4b0be; line-height: 1.45; margin-bottom: 8px;">
+        Привіт! Цей проєкт створений <strong>однією людиною</strong>, щоб зробити моніторинг графіків затишним та зручним. Це перша ітерація — я відкритий до ваших ідей, зауважень та пропозицій!
       </p>
 
-      <p>
-        Це лише <strong>перша ітерація</strong> сервісу. Я активно працюю над його розвитком і з радістю буду вдосконалювати його під ваші побажання та потреби.
-      </p>
-
-      <p>
-        Буду щиро вдячний за ваші відгуки, пропозиції або підтримку! Якщо сервіс став вам у пригоді — не відмовлюся від донату від добрих людей на каву та підтримку сервера.
-      </p>
-
-      <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-          </svg>
-          <span style="font-size: 0.85rem; color: #cbd5e1;">Проєкт повністю open-source</span>
-        </div>
-        <a href="https://github.com/oleg20111/LightNet" target="_blank" rel="noopener noreferrer" style="color: #2ed573; text-decoration: none; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+      <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 0.82rem; color: #cbd5e1;">Проєкт повністю відкритий</span>
+        <a href="https://github.com/oleg20111/LightNet" target="_blank" rel="noopener noreferrer" style="color: #2ed573; text-decoration: none; font-size: 0.82rem; font-weight: 700;">
           GitHub →
         </a>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="modal-close-btn" id="closeModalBtn" style="float: none;">Закрити</button>
-      </div>
+      <!-- Форма відгуку -->
+      <form id="feedbackForm" style="display: flex; flex-direction: column; gap: 9px; border-top: 1px solid var(--border); padding-top: 12px;">
+        <span style="font-size: 0.9rem; font-weight: 700; color: #f1f2f6;">Залишити відгук або пропозицію</span>
+        
+        <input type="text" id="fbName" placeholder="Ваше ім'я *" required 
+               style="background: rgba(255,255,255,0.06); border: 1px solid var(--border); color:#fff; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; outline: none;" />
+
+        <input type="email" id="fbEmail" placeholder="Ваш Email (необов'язково)" 
+               style="background: rgba(255,255,255,0.06); border: 1px solid var(--border); color:#fff; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; outline: none;" />
+
+        <textarea id="fbMessage" placeholder="Ваш відгук, побажання або ідея *" required rows="3"
+                  style="background: rgba(255,255,255,0.06); border: 1px solid var(--border); color:#fff; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; outline: none; resize: vertical; font-family: inherit;"></textarea>
+
+        <div id="fbStatus" style="font-size: 0.82rem; min-height: 18px;"></div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+          <button type="button" class="btn-action" id="closeModalBtn" style="padding: 7px 14px; border-radius: 8px;">Закрити</button>
+          <button type="submit" id="fbSubmitBtn" style="background: #2ed573; border: none; color: #090a0f; font-weight: 700; padding: 7px 16px; border-radius: 8px; cursor: pointer;">Надіслати</button>
+        </div>
+      </form>
     </div>
   </div>
 
   <script>
+    const feedbackForm = document.getElementById('feedbackForm');
+    const fbStatus = document.getElementById('fbStatus');
+    const fbSubmitBtn = document.getElementById('fbSubmitBtn');
+
+    feedbackForm.onsubmit = async (e) => {
+      e.preventDefault();
+      fbSubmitBtn.disabled = true;
+      fbStatus.style.color = '#ffa502';
+      fbStatus.textContent = 'Відправка...';
+
+      const payload = {
+        name: document.getElementById('fbName').value,
+        email: document.getElementById('fbEmail').value,
+        message: document.getElementById('fbMessage').value
+      };
+
+      try {
+        const res = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          fbStatus.style.color = '#2ed573';
+          fbStatus.textContent = 'Дякую! Відгук успішно отримано.';
+          feedbackForm.reset();
+        } else {
+          fbStatus.style.color = '#ff4757';
+          fbStatus.textContent = data.error || 'Помилка відправки';
+        }
+      } catch (err) {
+        fbStatus.style.color = '#ff4757';
+        fbStatus.textContent = 'Помилка з’єднання із сервером';
+      } finally {
+        fbSubmitBtn.disabled = false;
+      }
+    };
     let currentDay = 'today';
     let schedule = [];
     let isLoading = false;

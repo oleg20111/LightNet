@@ -24,7 +24,6 @@
       gap: 20px;
     }
 
-    /* Екран входу */
     .login-box {
       background: #141722;
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -63,7 +62,6 @@
     }
     .btn:hover { opacity: 0.9; }
 
-    /* Головна розмітка адмінки: 2 колонки */
     .main-grid {
       display: grid;
       grid-template-columns: 420px 1fr;
@@ -85,7 +83,6 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
-    /* Верхня панель списку пресетів */
     .preset-tabs {
       display: flex;
       gap: 8px;
@@ -169,7 +166,6 @@
       padding: 0;
     }
 
-    /* Монітор попереднього перегляду (Preview) */
     .preview-container {
       position: sticky;
       top: 24px;
@@ -253,7 +249,7 @@
   <!-- Екран авторизації -->
   <div id="loginSection" class="login-box">
     <h2 style="font-size: 1.25rem;">Вхід в адмін-панель</h2>
-    <p style="color: #8391a5; font-size: 0.85rem;">Введіть захисний пароль із середовища Render</p>
+    <p style="color: #8391a5; font-size: 0.85rem;">Введіть захисний пароль адміністратора</p>
     <input type="password" id="adminPassInput" placeholder="Пароль адміністратора" />
     <button class="btn" id="loginBtn">Увійти</button>
     <div class="status-msg err" id="loginError"></div>
@@ -284,7 +280,7 @@
         </div>
 
         <div class="ctrl-row">
-          <label>URL відео/фото (/totoro.mp4, /emerald-rain.mp4 або URL)</label>
+          <label>URL відео/фото (/totoro.mp4, /emerald-rain.mp4 або зовнішнє посилання)</label>
           <input type="text" id="inpUrl" />
         </div>
 
@@ -298,7 +294,6 @@
 
         <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 4px 0;" />
 
-        <!-- Позиція по вертикалі -->
         <div class="ctrl-row">
           <label>Позиція по вертикалі <span id="lblPos">50%</span></label>
           <div class="range-wrap">
@@ -306,7 +301,6 @@
           </div>
         </div>
 
-        <!-- Розмір таймера -->
         <div class="ctrl-row">
           <label>Розмір таймера <span id="lblScale">100%</span></label>
           <div class="range-wrap">
@@ -314,7 +308,6 @@
           </div>
         </div>
 
-        <!-- Затемнення фону -->
         <div class="ctrl-row">
           <label>Затемнення фону <span id="lblDim">55%</span></label>
           <div class="range-wrap">
@@ -322,7 +315,6 @@
           </div>
         </div>
 
-        <!-- Радіус світіння -->
         <div class="ctrl-row">
           <label>Радіус підсвітки (світіння) <span id="lblGlow">25px</span></label>
           <div class="range-wrap">
@@ -330,13 +322,11 @@
           </div>
         </div>
 
-        <!-- Світіння тумблер -->
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
           <span style="font-size: 0.88rem; color: #cbd5e1; font-weight: 500;">Підсвітка таймера</span>
           <input type="checkbox" id="chkGlow" style="width: 20px; height: 20px; accent-color: #2ed573; cursor: pointer;" />
         </div>
 
-        <!-- Кольори -->
         <div class="ctrl-row">
           <label>Колірна палітра</label>
           <div class="color-row">
@@ -358,7 +348,7 @@
         <div class="status-msg" id="statusMsg"></div>
       </div>
 
-      <!-- Права колонка: Живий попередній перегляд (Preview) -->
+      <!-- Права колонка: Живий попередній перегляд -->
       <div class="preview-container">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">ЖИВИЙ ПЕРЕГЛЯД (16:9)</span>
@@ -369,16 +359,25 @@
         </div>
 
         <div class="monitor-screen">
-          <!-- Фонове відео або фото -->
           <img id="prevImg" class="preview-bg-media" style="display:none;" />
           <video id="prevVideo" class="preview-bg-media" autoplay loop muted playsinline style="display:none;"></video>
           <div id="prevOverlay" class="preview-overlay"></div>
 
-          <!-- Макет таймера -->
           <div id="prevStage" class="preview-stage">
             <div id="prevCaption" class="preview-caption">ДО ВІДКЛЮЧЕННЯ СВІТЛА</div>
             <div id="prevTimer" class="preview-timer">01:38:10</div>
             <div id="prevHint" class="preview-hint">Період без світла: 22:30 — 23:59</div>
+          </div>
+        </div>
+
+        <!-- Блок перегляду відгуків -->
+        <div style="background: #141722; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; margin-top: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 0.9rem; font-weight: 700; color: #fff;">Отримані відгуки від користувачів</span>
+            <button class="btn" id="refreshFeedbacksBtn" style="padding: 5px 10px; font-size: 0.75rem;">Оновити</button>
+          </div>
+          <div id="feedbacksContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
+            <div style="color:#8391a5; font-size:0.8rem;">Натисніть «Оновити» для перегляду відгуків</div>
           </div>
         </div>
       </div>
@@ -390,13 +389,12 @@
   let presets = [];
   let currentPassword = '';
   let activeIndex = 0;
-  let previewState = 'red'; // 'red' або 'green'
+  let previewState = 'red';
 
   const loginSection = document.getElementById('loginSection');
   const contentSection = document.getElementById('contentSection');
   const loginError = document.getElementById('loginError');
 
-  // Елементи форми
   const inpName = document.getElementById('inpName');
   const inpUrl = document.getElementById('inpUrl');
   const inpType = document.getElementById('inpType');
@@ -413,7 +411,6 @@
   const colGreen = document.getElementById('colGreen');
   const colRed = document.getElementById('colRed');
 
-  // Елементи Preview
   const prevImg = document.getElementById('prevImg');
   const prevVideo = document.getElementById('prevVideo');
   const prevOverlay = document.getElementById('prevOverlay');
@@ -422,7 +419,6 @@
   const prevTimer = document.getElementById('prevTimer');
   const prevHint = document.getElementById('prevHint');
 
-  // Авторизація
   document.getElementById('loginBtn').onclick = async () => {
     const pwd = document.getElementById('adminPassInput').value.trim();
     if (!pwd) return;
@@ -441,6 +437,7 @@
         contentSection.style.display = 'flex';
         renderTabs();
         selectPreset(0);
+        loadFeedbacks();
       } else {
         loginError.textContent = data.error || 'Невірний пароль';
       }
@@ -489,12 +486,10 @@
     updatePreview();
   }
 
-  // Оновлення Preview в реальному часі
   function updatePreview() {
     const p = presets[activeIndex];
     if (!p) return;
 
-    // Фон
     if (p.type === 'video') {
       prevImg.style.display = 'none';
       if (prevVideo.src !== location.origin + p.url && prevVideo.src !== p.url) {
@@ -507,26 +502,20 @@
       prevImg.style.display = 'block';
     }
 
-    // Затемнення
     prevOverlay.style.background = `rgba(9, 10, 15, ${p.dim / 100})`;
-
-    // Позиція по вертикалі
     prevStage.style.top = `${p.pos}%`;
 
-    // Розмір шрифту
     const scaleFactor = p.scale / 100;
     prevTimer.style.fontSize = `${2.8 * scaleFactor}rem`;
     prevCaption.style.fontSize = `${0.75 * scaleFactor}rem`;
     prevHint.style.fontSize = `${0.72 * scaleFactor}rem`;
 
-    // Кольори
     prevCaption.style.color = p.textColor;
     prevHint.style.color = p.textColor;
 
     const activeColor = previewState === 'green' ? p.greenColor : p.redColor;
     prevTimer.style.color = activeColor;
 
-    // Світіння
     if (p.glowEnabled) {
       prevTimer.style.filter = `drop-shadow(0 0 ${p.glowRadius * 0.7}px ${activeColor})`;
     } else {
@@ -534,7 +523,6 @@
     }
   }
 
-  // Прив'язка подій до повзунків (Live input)
   rangePos.oninput = () => {
     presets[activeIndex].pos = Number(rangePos.value);
     lblPos.textContent = rangePos.value + '%';
@@ -592,7 +580,6 @@
     updatePreview();
   };
 
-  // Перемикання станів попереднього перегляду (Зелений / Червоний)
   document.getElementById('previewModeGreen').onclick = () => {
     previewState = 'green';
     prevCaption.textContent = 'ДО УВІМКНЕННЯ СВІТЛА';
@@ -604,7 +591,6 @@
     updatePreview();
   };
 
-  // Додавання нової теми
   document.getElementById('addPresetBtn').onclick = () => {
     presets.push({
       name: 'Нова тема',
@@ -622,7 +608,6 @@
     selectPreset(presets.length - 1);
   };
 
-  // Видалення активної теми
   document.getElementById('delCurrentBtn').onclick = () => {
     if (presets.length <= 1) {
       alert('Потрібно залишити щонайменше одну тему!');
@@ -634,7 +619,6 @@
     }
   };
 
-  // Збереження
   document.getElementById('saveAllBtn').onclick = async () => {
     const statusMsg = document.getElementById('statusMsg');
     try {
@@ -657,6 +641,37 @@
     }
     setTimeout(() => { statusMsg.textContent = ''; }, 4000);
   };
+
+  async function loadFeedbacks() {
+    const container = document.getElementById('feedbacksContainer');
+    try {
+      const res = await fetch('/api/admin/feedbacks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: currentPassword })
+      });
+      const data = await res.json();
+      const list = data.feedbacks || [];
+      if (list.length === 0) {
+        container.innerHTML = '<div style="color:#8391a5; font-size:0.8rem;">Поки немає жодного відгуку</div>';
+        return;
+      }
+      container.innerHTML = list.map(item => `
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.8rem;">
+            <strong style="color:#2ed573;">${item.name}</strong>
+            <span style="color:#8391a5; font-size:0.75rem;">${new Date(item.createdAt).toLocaleString()}</span>
+          </div>
+          ${item.email ? `<div style="font-size:0.75rem; color:#48dbfb; margin-bottom:4px;">${item.email}</div>` : ''}
+          <div style="font-size:0.82rem; color:#f1f2f6; white-space:pre-wrap;">${item.message}</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      container.innerHTML = '<div style="color:#ff4757; font-size:0.8rem;">Помилка завантаження відгуків</div>';
+    }
+  }
+
+  document.getElementById('refreshFeedbacksBtn').onclick = loadFeedbacks;
 </script>
 </body>
 </html>

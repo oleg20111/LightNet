@@ -1,22 +1,18 @@
 {
   "name": "lightnet",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Естетичний монітор графіків відключення світла в Україні",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "axios": "^1.20.0",
-    "cheerio": "^1.2.0",
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "puppeteer": "^25.13.0"
-  },
-  "devDependencies": {}
+    "axios": "^1.7.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
 }
