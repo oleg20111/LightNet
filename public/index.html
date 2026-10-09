@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Монітор світла</title>
+  <title>LightNet — Монітор світла</title>
   <style>
     :root {
       --bg: #090a0f;
-      --card-bg: rgba(18, 20, 29, 0.96);
-      --border: rgba(255, 255, 255, 0.08);
+      --card-bg: rgba(22, 27, 34, 0.85);
+      --border: rgba(255, 255, 255, 0.12);
       --text-main: #f1f2f6;
       --text-muted: #8391a5;
       --red: #ff4757;
       --green: #2ed573;
       --timer-scale: 1;
       --glow-radius: 25px;
-      --vertical-pos: 50%;
+      --vertical-pos: 68%;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,6 +31,7 @@
       user-select: none;
     }
 
+    /* Фоновий медіа контейнер */
     .bg-media-container {
       position: absolute;
       top: 0;
@@ -56,252 +57,99 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(9, 10, 15, 0.65);
+      background: rgba(9, 10, 15, 0.6);
       z-index: 1;
       pointer-events: none;
       transition: background 0.3s;
     }
 
-    /* Верхня панель (hover) */
-    .top-drawer-container {
+    /* 1. Верхні капсули вибору області та черги з картинками/іконками */
+    .top-left-controls {
       position: absolute;
-      top: 0;
+      top: 24px;
       left: 28px;
-      z-index: 40;
       display: flex;
-      flex-direction: column;
-      transform: translateY(calc(-100% + 22px));
-      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      gap: 14px;
+      z-index: 25;
     }
 
-    .top-drawer-container:hover {
-      transform: translateY(0);
-    }
-
-    .controls-meta {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-top: none;
-      padding: 14px 18px;
-      border-radius: 0 0 12px 12px;
+    .pill-select-wrapper {
+      position: relative;
       display: flex;
       align-items: center;
-      gap: 12px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(14px);
-    }
-
-    .top-drawer-handle {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 12px;
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.08);
       border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-      width: fit-content;
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 1.5px;
-      color: var(--text-muted);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 8px 16px;
+      gap: 9px;
       cursor: pointer;
-      text-transform: uppercase;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
 
-    .top-drawer-container:hover .top-drawer-handle {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .custom-select {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: #ced6e0;
-      padding: 7px 12px;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      font-weight: 500;
-      outline: none;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .custom-select:hover, .custom-select:focus {
-      background: rgba(255, 255, 255, 0.12);
+    .pill-select-wrapper:hover {
+      background: rgba(255, 255, 255, 0.14);
       border-color: rgba(255, 255, 255, 0.25);
     }
 
-    .custom-select:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .custom-select option {
-      background: #141722;
-      color: #fff;
-    }
-
-    /* Нижня панель (Фон та стиль) */
-    .bottom-bg-drawer {
-      position: absolute;
-      bottom: 0;
-      right: 28px;
-      z-index: 40;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      transform: translateY(calc(100% - 22px));
-      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-
-    .bottom-bg-drawer:hover {
-      transform: translateY(0);
-    }
-
-    .bottom-drawer-handle {
+    .pill-icon {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 3px 14px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border);
-      border-bottom: none;
-      border-radius: 8px 8px 0 0;
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 1.5px;
-      color: var(--text-muted);
-      cursor: pointer;
-      text-transform: uppercase;
-      transition: all 0.2s;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
     }
 
-    .bottom-bg-drawer:hover .bottom-drawer-handle {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .bg-controls-panel {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-bottom: none;
-      padding: 16px 20px;
-      border-radius: 12px 12px 0 0;
-      display: flex;
-      flex-direction: column;
-      gap: 11px;
-      box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(14px);
-      min-width: 320px;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-
-    .bg-panel-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      font-size: 0.83rem;
-      color: #ced6e0;
-    }
-
-    .bg-panel-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 3px 0;
-    }
-
-    .color-picker-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    input[type=color] {
+    .pill-select {
+      appearance: none;
       -webkit-appearance: none;
+      background: transparent;
       border: none;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
+      color: #f1f2f6;
+      font-size: 0.95rem;
+      font-weight: 500;
+      outline: none;
       cursor: pointer;
-      background: none;
+      padding-right: 18px;
     }
 
-    input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
-    input[type=color]::-webkit-color-swatch {
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-    }
-
-    input[type=checkbox] {
-      accent-color: #2ed573;
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-    }
-
-    .btn-file-wrap {
-      position: relative;
-      overflow: hidden;
-      display: inline-block;
-    }
-
-    .btn-action {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border);
+    .pill-select option {
+      background: #161b22;
       color: #fff;
-      padding: 5px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: background 0.2s;
     }
 
-    .btn-action:hover {
-      background: rgba(255, 255, 255, 0.16);
-    }
-
-    .btn-file-wrap input[type=file] {
+    .pill-chevron {
       position: absolute;
-      left: 0;
-      top: 0;
-      opacity: 0;
-      width: 100%;
-      height: 100%;
-      cursor: pointer;
+      right: 14px;
+      pointer-events: none;
+      color: #a4b0be;
+      font-size: 0.75rem;
     }
 
-    input[type=range] {
-      accent-color: #2ed573;
-      cursor: pointer;
-    }
-
-    /* Кнопка повного екрана */
+    /* Кнопка "На весь екран" */
     .fullscreen-btn {
       position: absolute;
       top: 24px;
       right: 28px;
       z-index: 25;
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.08);
       border: 1px solid var(--border);
       color: #ced6e0;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 0.88rem;
+      padding: 9px 18px;
+      border-radius: 20px;
+      font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
+      backdrop-filter: blur(16px);
       transition: all 0.2s;
-      backdrop-filter: blur(8px);
     }
 
     .fullscreen-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.15);
       color: #fff;
     }
 
@@ -323,17 +171,17 @@
     }
 
     .status-caption {
-      font-size: calc(1.15rem * var(--timer-scale));
+      font-size: calc(1.2rem * var(--timer-scale));
       letter-spacing: 3px;
       text-transform: uppercase;
       font-weight: 600;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       color: var(--text-muted);
       transition: color 0.2s;
     }
 
     .main-timer {
-      font-size: calc(clamp(4.5rem, 10vw, 9.5rem) * var(--timer-scale));
+      font-size: calc(clamp(4.8rem, 11vw, 10rem) * var(--timer-scale));
       font-weight: 800;
       font-variant-numeric: tabular-nums;
       letter-spacing: 4px;
@@ -352,11 +200,10 @@
       filter: none !important;
     }
 
-    /* Стиль пульсації при оновленні */
     .main-timer.loading {
       color: #38ada9;
       filter: drop-shadow(0 0 25px rgba(56, 173, 169, 0.4));
-      font-size: calc(clamp(2.4rem, 5.5vw, 4.8rem) * var(--timer-scale));
+      font-size: calc(clamp(2.5rem, 6vw, 5rem) * var(--timer-scale));
       letter-spacing: 3px;
       animation: pulse 1.2s infinite ease-in-out;
     }
@@ -374,14 +221,14 @@
     }
 
     .next-slot-hint {
-      margin-top: 20px;
+      margin-top: 18px;
       font-size: calc(1.15rem * var(--timer-scale));
-      color: var(--text-main);
+      color: #e2e8f0;
       letter-spacing: 0.5px;
       transition: color 0.2s;
     }
 
-    /* Права висувна панель */
+    /* Права панель графіка */
     .drawer-container {
       position: absolute;
       top: 0;
@@ -417,13 +264,7 @@
       font-weight: 600;
       text-transform: uppercase;
       color: var(--text-muted);
-      opacity: 0.6;
-      transition: opacity 0.2s, color 0.2s;
-    }
-
-    .drawer-container:hover .drawer-handle span {
-      opacity: 1;
-      color: #ced6e0;
+      opacity: 0.7;
     }
 
     .schedule-panel {
@@ -434,39 +275,44 @@
       padding: 24px 18px;
       display: flex;
       flex-direction: column;
-      backdrop-filter: blur(14px);
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(20px);
+      box-shadow: -10px 0 35px rgba(0, 0, 0, 0.6);
+    }
+
+    .panel-header-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #cbd5e1;
+      margin-bottom: 14px;
+      text-align: center;
     }
 
     .tabs-wrap {
       display: flex;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
       padding: 3px;
       margin-bottom: 16px;
     }
 
     .tab-btn {
       flex: 1;
-      padding: 8px 0;
+      padding: 9px 0;
       border: none;
       background: transparent;
       color: var(--text-muted);
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
-      border-radius: 6px;
+      border-radius: 8px;
       transition: all 0.2s;
     }
 
     .tab-btn.active {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.15);
       color: #fff;
-    }
-
-    .tab-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
     }
 
     .hours-strip {
@@ -480,7 +326,7 @@
 
     .hours-strip::-webkit-scrollbar { width: 4px; }
     .hours-strip::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.15);
       border-radius: 4px;
     }
 
@@ -488,21 +334,21 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.02);
+      padding: 11px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid transparent;
       font-size: 0.95rem;
     }
 
     .slot-row.current {
-      border-color: rgba(255, 255, 255, 0.28);
-      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.08);
     }
 
     .slot-time {
       font-weight: 600;
-      color: #e2e8f0;
+      color: #f1f2f6;
       font-variant-numeric: tabular-nums;
     }
 
@@ -510,100 +356,455 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 38px;
-      height: 28px;
-      border-radius: 8px;
+      width: 40px;
+      height: 30px;
+      border-radius: 9px;
     }
 
     .icon-badge.off {
-      background: rgba(255, 71, 87, 0.14);
+      background: rgba(255, 71, 87, 0.15);
       color: var(--red);
-      border: 1px solid rgba(255, 71, 87, 0.28);
+      border: 1px solid rgba(255, 71, 87, 0.3);
     }
 
     .icon-badge.on {
-      background: rgba(46, 213, 115, 0.14);
+      background: rgba(46, 213, 115, 0.15);
       color: var(--green);
-      border: 1px solid rgba(46, 213, 115, 0.28);
+      border: 1px solid rgba(46, 213, 115, 0.3);
     }
 
-    .loader-box {
+    /* 3. Нижня панель "ФОН ТА СТИЛЬ" (стиль як у картки 2 з картинки) */
+    .bottom-bg-drawer {
+      position: absolute;
+      bottom: 0;
+      right: 28px;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      transform: translateY(calc(100% - 24px));
+      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .bottom-bg-drawer:hover {
+      transform: translateY(0);
+    }
+
+    .bottom-drawer-handle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 16px;
+      background: rgba(22, 27, 34, 0.95);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #ced6e0;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 0 -4px 15px rgba(0,0,0,0.4);
+    }
+
+    .bottom-bg-drawer:hover .bottom-drawer-handle {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .bg-controls-panel {
+      background: rgba(20, 24, 33, 0.95);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      padding: 20px 24px;
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(25px);
+      width: 440px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .card-top-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .card-top-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .ctrl-grid-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .ctrl-label {
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    /* Повзунки (слайдери) в стилі макета 2 */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 170px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      cursor: pointer;
+    }
+
+    /* Тумблер iOS (Світіння) */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider-toggle {
+      background-color: #2ed573;
+    }
+
+    input:checked + .slider-toggle:before {
+      transform: translateX(20px);
+    }
+
+    /* Кружечки кольорів із підписами (Текст, Вкл, Викл) */
+    .color-block-group {
+      display: flex;
+      gap: 16px;
+    }
+
+    .color-item {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 50px 10px;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      text-align: center;
+      gap: 5px;
     }
 
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid rgba(255, 255, 255, 0.08);
-      border-top-color: #38ada9;
+    .color-item-label {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .color-circle-btn {
+      position: relative;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .color-circle-btn input[type=color] {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 50px;
+      height: 50px;
+      border: none;
+      cursor: pointer;
+    }
 
-    /* Футер зліва знизу */
-    .bottom-meta {
+    /* 4. Теми (Вбудовані та Власні збережені) */
+    .themes-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .theme-header-txt {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .theme-card {
+      position: relative;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      cursor: pointer;
+      background: #11141c;
+      transition: all 0.2s;
+      height: 70px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 6px 8px;
+    }
+
+    .theme-card img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0.55;
+    }
+
+    .theme-card span {
+      position: relative;
+      z-index: 2;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    .theme-card:hover {
+      border-color: #2ed573;
+      transform: translateY(-2px);
+    }
+
+    .custom-slots-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .user-slot-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+
+    .user-slot-btn:hover {
+      border-color: #38ada9;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-file-upload {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      transition: background 0.2s;
+    }
+
+    .btn-file-upload:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .bottom-actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .btn-sub {
+      background: transparent;
+      border: none;
+      color: #8391a5;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .btn-sub:hover { color: #fff; }
+
+    /* 2. Нижній лівий кут (Оновлено + аудіохвиля + кнопка Відгук) */
+    .bottom-left-bar {
       position: absolute;
       bottom: 24px;
       left: 28px;
-      font-size: 0.82rem;
-      color: var(--text-muted);
       display: flex;
-      gap: 8px;
       align-items: center;
-      z-index: 20;
+      gap: 12px;
+      z-index: 25;
     }
 
-    .dot-live {
-      width: 7px;
-      height: 7px;
-      background: var(--green);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--green);
-      transition: background 0.3s;
+    .update-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      background: rgba(22, 27, 34, 0.65);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 0.88rem;
+      color: #e2e8f0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
 
-    .dot-live.syncing {
-      background: #ffa502;
-      box-shadow: 0 0 10px #ffa502;
-      animation: pulse 0.7s infinite ease-in-out;
+    /* Анімована неонова аудіохвиля */
+    .waveform-icon {
+      display: flex;
+      align-items: center;
+      gap: 2.5px;
+      height: 14px;
     }
 
-    .source-link {
-      color: var(--text-muted);
-      text-decoration: underline;
-      text-underline-offset: 3px;
+    .wave-bar {
+      width: 2.5px;
+      background: #2ed573;
+      border-radius: 2px;
+      animation: wave 1.2s ease-in-out infinite alternate;
+      box-shadow: 0 0 6px #2ed573;
+    }
+
+    .wave-bar:nth-child(1) { height: 6px; animation-delay: 0.1s; }
+    .wave-bar:nth-child(2) { height: 12px; animation-delay: 0.3s; }
+    .wave-bar:nth-child(3) { height: 16px; animation-delay: 0.2s; }
+    .wave-bar:nth-child(4) { height: 9px; animation-delay: 0.4s; }
+
+    @keyframes wave {
+      0% { transform: scaleY(0.4); }
+      100% { transform: scaleY(1); }
+    }
+
+    .feedback-pill-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 0.88rem;
+      color: #ced6e0;
       cursor: pointer;
-      transition: color 0.2s;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
 
-    .source-link:hover {
-      color: #48dbfb;
+    .feedback-pill-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+
+    /* Модальне вікно Відгук / Про проєкт */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-box {
+      background: #161b24;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 26px 30px;
+      width: 90%;
+      max-width: 440px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      color: #f1f2f6;
+    }
+
+    .modal-box h3 { margin-bottom: 12px; font-size: 1.25rem; }
+    .modal-box p { font-size: 0.92rem; color: #a4b0be; line-height: 1.5; margin-bottom: 14px; }
+    .modal-close-btn {
+      background: #2ed573;
+      border: none;
+      color: #090a0f;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      float: right;
     }
   </style>
 </head>
 <body>
 
-  <!-- Фон -->
+  <!-- Фон (відео / картинка) -->
   <div class="bg-media-container">
-    <img id="bgImage" alt="Фонове зображення" />
+    <img id="bgImage" alt="Фон" />
     <video id="bgVideo" autoplay loop muted playsinline></video>
   </div>
   <div class="bg-overlay" id="bgOverlay"></div>
 
-  <!-- Верхня панель черги -->
-  <div class="top-drawer-container">
-    <div class="controls-meta">
-      <select id="regionSelect" class="custom-select">
+  <!-- 1. Капсули вибору області та черги з картинками/значками зліва зверху -->
+  <div class="top-left-controls">
+    <!-- Область з червоним піном локації -->
+    <div class="pill-select-wrapper">
+      <div class="pill-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#ff4757">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+        </svg>
+      </div>
+      <select id="regionSelect" class="pill-select">
         <option value="poltavska-oblast">Полтавська обл.</option>
         <option value="kyivska-oblast">Київська обл.</option>
         <option value="m-kyiv">м. Київ</option>
@@ -616,8 +817,17 @@
         <option value="sumska-oblast">Сумська обл.</option>
         <option value="chernihivska-oblast">Чернігівська обл.</option>
       </select>
+      <span class="pill-chevron">▼</span>
+    </div>
 
-      <select id="queueSelect" class="custom-select">
+    <!-- Черга з золотистою блискавкою -->
+    <div class="pill-select-wrapper">
+      <div class="pill-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffa502">
+          <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
+        </svg>
+      </div>
+      <select id="queueSelect" class="pill-select">
         <option value="1.1">Черга 1.1</option>
         <option value="1.2">Черга 1.2</option>
         <option value="2.1">Черга 2.1</option>
@@ -631,101 +841,32 @@
         <option value="6.1">Черга 6.1</option>
         <option value="6.2">Черга 6.2</option>
       </select>
-    </div>
-    <div class="top-drawer-handle">
-      <span>Налаштування черги ▼</span>
+      <span class="pill-chevron">▼</span>
     </div>
   </div>
 
-  <!-- Нижня панель: Фон, стилі, позиція -->
-  <div class="bottom-bg-drawer">
-    <div class="bottom-drawer-handle">
-      <span>ФОН ТА СТИЛЬ ▲</span>
-    </div>
-    <div class="bg-controls-panel">
-      <div class="bg-panel-row">
-        <span>Зображення / Відео:</span>
-        <div class="btn-file-wrap">
-          <button class="btn-action">Обрати файл</button>
-          <input type="file" id="bgFileInput" accept="image/*,video/*" />
-        </div>
-      </div>
-      <div class="bg-panel-row">
-        <span>Затемнення фону:</span>
-        <input type="range" id="dimRange" min="0" max="95" value="65" />
-      </div>
-
-      <div class="bg-panel-divider"></div>
-
-      <div class="bg-panel-row">
-        <span>Позиція по вертикалі:</span>
-        <input type="range" id="posRange" min="20" max="88" value="50" />
-      </div>
-
-      <div class="bg-panel-row">
-        <span>Розмір таймера:</span>
-        <input type="range" id="sizeRange" min="50" max="160" value="100" />
-      </div>
-
-      <div class="bg-panel-row">
-        <span>Підсвітка (світіння):</span>
-        <input type="checkbox" id="glowCheckbox" checked />
-      </div>
-      <div class="bg-panel-row" id="glowRadiusRow">
-        <span>Радіус підсвітки:</span>
-        <input type="range" id="glowRadiusRange" min="0" max="60" value="25" />
-      </div>
-
-      <div class="bg-panel-divider"></div>
-
-      <div class="bg-panel-row">
-        <span>Колір підписів:</span>
-        <div class="color-picker-wrap">
-          <input type="color" id="textColorPicker" value="#a4b0be" />
-        </div>
-      </div>
-      <div class="bg-panel-row">
-        <span>Колір «Світло є»:</span>
-        <div class="color-picker-wrap">
-          <input type="color" id="greenColorPicker" value="#2ed573" />
-        </div>
-      </div>
-      <div class="bg-panel-row">
-        <span>Колір «Відключення»:</span>
-        <div class="color-picker-wrap">
-          <input type="color" id="redColorPicker" value="#ff4757" />
-        </div>
-      </div>
-
-      <div class="bg-panel-divider"></div>
-
-      <div class="bg-panel-row" style="justify-content: flex-end;">
-        <button class="btn-action" id="resetBgBtn" style="color: #ff4757;">Скинути все</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Кнопка повного екрана -->
-  <button id="fullscreenBtn" class="fullscreen-btn" title="На повний екран">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Кнопка повного екрана справа зверху -->
+  <button id="fullscreenBtn" class="fullscreen-btn">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
       <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
     </svg>
-    <span id="fsText">Повний екран</span>
+    <span id="fsText">На весь екран</span>
   </button>
 
-  <!-- Центрований блок таймера -->
+  <!-- Центральний відлік -->
   <main class="main-stage">
     <div class="status-caption" id="caption">ПІДКЛЮЧЕННЯ...</div>
     <div class="main-timer loading" id="timer">ЗАВАНТАЖЕННЯ...</div>
     <div class="next-slot-hint" id="hint">Отримуємо актуальний розклад з сервера</div>
   </main>
 
-  <!-- Права панель графіка -->
+  <!-- Права бічна панель (Графік на добу) -->
   <div class="drawer-container">
     <div class="drawer-handle">
       <span>ГРАФІК</span>
     </div>
     <aside class="schedule-panel">
+      <div class="panel-header-title">ДОБОВИЙ РОЗКЛАД</div>
       <div class="tabs-wrap">
         <button class="tab-btn active" id="tabToday">Сьогодні</button>
         <button class="tab-btn" id="tabTomorrow">Завтра</button>
@@ -734,12 +875,143 @@
     </aside>
   </div>
 
-  <!-- Підвал -->
-  <div class="bottom-meta">
-    <span class="dot-live syncing" id="dotLive"></span>
-    <span id="updateStatusText">Отримання розкладу...</span>
-    <span>•</span>
-    <a id="externalSourceLink" class="source-link" href="https://bezsvitla.com.ua/poltavska-oblast" target="_blank" rel="noopener noreferrer">bezsvitla.com.ua</a>
+  <!-- 3. Нижня панель "ФОН ТА СТИЛЬ" (стиль із макета 2) -->
+  <div class="bottom-bg-drawer">
+    <div class="bottom-drawer-handle">
+      <span>ФОН ТА СТИЛЬ ▲</span>
+    </div>
+    <div class="bg-controls-panel">
+      <div class="card-top-title-row">
+        <div class="card-top-title">Фон та стиль</div>
+        <!-- Кружечки з підписами: Текст / Вкл / Викл -->
+        <div class="color-block-group">
+          <div class="color-item">
+            <span class="color-item-label">Текст</span>
+            <div class="color-circle-btn" style="background: var(--text-muted);">
+              <input type="color" id="textColorPicker" value="#a4b0be" />
+            </div>
+          </div>
+          <div class="color-item">
+            <span class="color-item-label">Вкл</span>
+            <div class="color-circle-btn" style="background: var(--green);">
+              <input type="color" id="greenColorPicker" value="#2ed573" />
+            </div>
+          </div>
+          <div class="color-item">
+            <span class="color-item-label">Викл</span>
+            <div class="color-circle-btn" style="background: var(--red);">
+              <input type="color" id="redColorPicker" value="#ff4757" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl-grid-row">
+        <span class="ctrl-label">Вертикальне положення</span>
+        <input type="range" id="posRange" min="20" max="88" value="68" />
+      </div>
+
+      <div class="ctrl-grid-row">
+        <span class="ctrl-label">Розмір таймера</span>
+        <input type="range" id="sizeRange" min="50" max="160" value="100" />
+      </div>
+
+      <div class="ctrl-grid-row">
+        <span class="ctrl-label">Затемнення фону</span>
+        <input type="range" id="dimRange" min="0" max="95" value="60" />
+      </div>
+
+      <div class="ctrl-grid-row">
+        <span class="ctrl-label">Радіус світіння</span>
+        <input type="range" id="glowRadiusRange" min="0" max="60" value="25" />
+      </div>
+
+      <div class="ctrl-grid-row">
+        <span class="ctrl-label">Підсвітка (світіння)</span>
+        <label class="switch">
+          <input type="checkbox" id="glowCheckbox" checked />
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+
+      <!-- 4. Готові пресетні теми + збережені теми користувача -->
+      <div class="themes-title-row">
+        <span class="theme-header-txt">Обрані фони (Пресетні)</span>
+        <button class="btn-sub" id="adminThemesBtn">Редагувати теми</button>
+      </div>
+      <div class="theme-grid" id="presetThemeGrid">
+        <div class="theme-card" data-url="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800">
+          <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=300" alt="Ніч" />
+          <span>Нічний ліс</span>
+        </div>
+        <div class="theme-card" data-url="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800">
+          <img src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=300" alt="Cyber" />
+          <span>Кіберпанк</span>
+        </div>
+        <div class="theme-card" data-url="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800">
+          <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=300" alt="Dark" />
+          <span>Мінімал</span>
+        </div>
+      </div>
+
+      <div class="themes-title-row" style="margin-top: 6px;">
+        <span class="theme-header-txt">Мої власні теми (ПК)</span>
+      </div>
+      <div class="custom-slots-row">
+        <div class="user-slot-btn" id="slot1Btn">
+          <span>Слот 1</span>
+          <span style="font-size: 0.7rem; color: #2ed573;" id="slot1Status">Зберегти</span>
+        </div>
+        <div class="user-slot-btn" id="slot2Btn">
+          <span>Слот 2</span>
+          <span style="font-size: 0.7rem; color: #2ed573;" id="slot2Status">Зберегти</span>
+        </div>
+      </div>
+
+      <label class="btn-file-upload">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+        </svg>
+        <span>Завантажити свій файл (Відео / Фото)</span>
+        <input type="file" id="bgFileInput" accept="image/*,video/*" style="display:none;" />
+      </label>
+
+      <div class="bottom-actions-row">
+        <button class="btn-sub" id="resetBgBtn" style="color: #ff4757;">Скинути всі налаштування</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Лівий нижній кут: Оновлено + аудіохвиля + кнопка "Про проєкт / Відгук" -->
+  <div class="bottom-left-bar">
+    <div class="update-status-pill">
+      <div class="waveform-icon">
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
+        <span class="wave-bar"></span>
+      </div>
+      <span id="updateStatusText">Оновлено: --:--</span>
+      <span>•</span>
+      <a id="externalSourceLink" href="https://bezsvitla.com.ua/poltavska-oblast" target="_blank" style="color: #8391a5; text-decoration: none;">bezsvitla.com.ua</a>
+    </div>
+
+    <button class="feedback-pill-btn" id="openModalBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>Про проєкт / Відгук</span>
+    </button>
+  </div>
+
+  <!-- Модальне вікно "Про проєкт" -->
+  <div class="modal-overlay" id="aboutModal">
+    <div class="modal-box">
+      <h3>Про сервіс LightNet</h3>
+      <p>LightNet — це незалежний естетичний монітор графіків погодинних відключень електроенергії в Україні. Дані автоматично агрегуються з відкритого джерела bezsvitla.com.ua.</p>
+      <p>Всі параметри таймера, завантажені відео та фонові стилі надійно зберігаються на вашому пристрої.</p>
+      <button class="modal-close-btn" id="closeModalBtn">Зрозуміло</button>
+    </div>
   </div>
 
   <script>
@@ -747,21 +1019,70 @@
     let schedule = [];
     let isLoading = false;
 
+    // --- INDEXEDDB ДЛЯ ЗБЕРЕЖЕННЯ ВЕЛИКИХ ВІДЕО/ФОТО ---
+    const DB_NAME = 'LightNetMediaDB';
+    const DB_STORE = 'backgrounds';
+
+    function openMediaDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(DB_STORE);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function saveMediaBlob(blob, type, key = 'saved_media_file') {
+      const db = await openMediaDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        const store = tx.objectStore(DB_STORE);
+        store.put(blob, key);
+        store.put(type, key + '_type');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function loadMediaBlob(key = 'saved_media_file') {
+      const db = await openMediaDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const store = tx.objectStore(DB_STORE);
+        const reqFile = store.get(key);
+        const reqType = store.get(key + '_type');
+        tx.oncomplete = () => {
+          if (reqFile.result && reqType.result) {
+            resolve({ blob: reqFile.result, type: reqType.result });
+          } else {
+            resolve(null);
+          }
+        };
+        tx.onerror = () => resolve(null);
+      });
+    }
+
+    async function clearMediaBlob() {
+      const db = await openMediaDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).clear();
+        tx.oncomplete = () => resolve();
+      });
+    }
+
+    // SVG Іконки
     const ICON_OFF = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-        <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2.2"/>
       </svg>
     `;
 
     const ICON_ON = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 18h6"/>
-        <path d="M10 22h4"/>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18h6"/><path d="M10 22h4"/>
         <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/>
-        <line x1="12" y1="2" x2="12" y2="0"/>
-        <line x1="4.93" y1="4.93" x2="3.51" y2="3.51"/>
-        <line x1="19.07" y1="4.93" x2="20.49" y2="3.51"/>
       </svg>
     `;
 
@@ -772,7 +1093,6 @@
     const sourceLink = document.getElementById('externalSourceLink');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const fsText = document.getElementById('fsText');
-    const dotLive = document.getElementById('dotLive');
 
     const bgFileInput = document.getElementById('bgFileInput');
     const resetBgBtn = document.getElementById('resetBgBtn');
@@ -781,7 +1101,6 @@
     const sizeRange = document.getElementById('sizeRange');
     const glowCheckbox = document.getElementById('glowCheckbox');
     const glowRadiusRange = document.getElementById('glowRadiusRange');
-    const glowRadiusRow = document.getElementById('glowRadiusRow');
     const textColorPicker = document.getElementById('textColorPicker');
     const greenColorPicker = document.getElementById('greenColorPicker');
     const redColorPicker = document.getElementById('redColorPicker');
@@ -790,9 +1109,14 @@
     const bgOverlay = document.getElementById('bgOverlay');
     const timerEl = document.getElementById('timer');
 
+    // Модальне вікно
+    const aboutModal = document.getElementById('aboutModal');
+    document.getElementById('openModalBtn').onclick = () => aboutModal.style.display = 'flex';
+    document.getElementById('closeModalBtn').onclick = () => aboutModal.style.display = 'none';
+
     function applyStyles() {
       const scale = (localStorage.getItem('ui_scale') || 100) / 100;
-      const verticalPos = localStorage.getItem('ui_vertical_pos') || 50;
+      const verticalPos = localStorage.getItem('ui_vertical_pos') || 68;
       const textColor = localStorage.getItem('ui_text_color') || '#a4b0be';
       const greenColor = localStorage.getItem('ui_green_color') || '#2ed573';
       const redColor = localStorage.getItem('ui_red_color') || '#ff4757';
@@ -816,125 +1140,77 @@
 
       if (!glowEnabled) {
         timerEl.classList.add('no-glow');
-        glowRadiusRow.style.opacity = '0.4';
         glowRadiusRange.disabled = true;
       } else {
         timerEl.classList.remove('no-glow');
-        glowRadiusRow.style.opacity = '1';
         glowRadiusRange.disabled = false;
       }
     }
 
-    posRange.addEventListener('input', (e) => {
-      const val = e.target.value;
-      document.documentElement.style.setProperty('--vertical-pos', `${val}%`);
-      localStorage.setItem('ui_vertical_pos', val);
-    });
+    posRange.oninput = (e) => {
+      document.documentElement.style.setProperty('--vertical-pos', `${e.target.value}%`);
+      localStorage.setItem('ui_vertical_pos', e.target.value);
+    };
 
-    sizeRange.addEventListener('input', (e) => {
-      const val = e.target.value;
-      document.documentElement.style.setProperty('--timer-scale', val / 100);
-      localStorage.setItem('ui_scale', val);
-    });
+    sizeRange.oninput = (e) => {
+      document.documentElement.style.setProperty('--timer-scale', e.target.value / 100);
+      localStorage.setItem('ui_scale', e.target.value);
+    };
 
-    glowCheckbox.addEventListener('change', (e) => {
-      const enabled = e.target.checked;
-      localStorage.setItem('ui_glow_enabled', enabled);
-      if (!enabled) {
-        timerEl.classList.add('no-glow');
-        glowRadiusRow.style.opacity = '0.4';
-        glowRadiusRange.disabled = true;
+    glowCheckbox.onchange = (e) => {
+      localStorage.setItem('ui_glow_enabled', e.target.checked);
+      applyStyles();
+    };
+
+    glowRadiusRange.oninput = (e) => {
+      document.documentElement.style.setProperty('--glow-radius', `${e.target.value}px`);
+      localStorage.setItem('ui_glow_radius', e.target.value);
+    };
+
+    textColorPicker.oninput = (e) => {
+      document.documentElement.style.setProperty('--text-muted', e.target.value);
+      localStorage.setItem('ui_text_color', e.target.value);
+    };
+
+    greenColorPicker.oninput = (e) => {
+      document.documentElement.style.setProperty('--green', e.target.value);
+      localStorage.setItem('ui_green_color', e.target.value);
+    };
+
+    redColorPicker.oninput = (e) => {
+      document.documentElement.style.setProperty('--red', e.target.value);
+      localStorage.setItem('ui_red_color', e.target.value);
+    };
+
+    const savedDim = localStorage.getItem('bg_dim') || 60;
+    dimRange.value = savedDim;
+    bgOverlay.style.background = `rgba(9, 10, 15, ${savedDim / 100})`;
+    dimRange.oninput = (e) => {
+      bgOverlay.style.background = `rgba(9, 10, 15, ${e.target.value / 100})`;
+      localStorage.setItem('bg_dim', e.target.value);
+    };
+
+    // Завантаження фону
+    let currentObjectUrl = null;
+    loadMediaBlob().then((data) => {
+      if (data) {
+        currentObjectUrl = URL.createObjectURL(data.blob);
+        applyMediaBackground(currentObjectUrl, data.type);
       } else {
-        timerEl.classList.remove('no-glow');
-        glowRadiusRow.style.opacity = '1';
-        glowRadiusRange.disabled = false;
+        const savedUrl = localStorage.getItem('preset_bg_url');
+        if (savedUrl) applyMediaBackground(savedUrl, 'image');
       }
     });
 
-    glowRadiusRange.addEventListener('input', (e) => {
-      const val = e.target.value;
-      document.documentElement.style.setProperty('--glow-radius', `${val}px`);
-      localStorage.setItem('ui_glow_radius', val);
-    });
-
-    textColorPicker.addEventListener('input', (e) => {
-      const val = e.target.value;
-      document.documentElement.style.setProperty('--text-muted', val);
-      localStorage.setItem('ui_text_color', val);
-    });
-
-    greenColorPicker.addEventListener('input', (e) => {
-      const val = e.target.value;
-      document.documentElement.style.setProperty('--green', val);
-      localStorage.setItem('ui_green_color', val);
-    });
-
-    redColorPicker.addEventListener('input', (e) => {
-      const val = e.target.value;
-      document.documentElement.style.setProperty('--red', val);
-      localStorage.setItem('ui_red_color', val);
-    });
-
-    const savedDim = localStorage.getItem('bg_dim');
-    if (savedDim) {
-      dimRange.value = savedDim;
-      bgOverlay.style.background = `rgba(9, 10, 15, ${savedDim / 100})`;
-    }
-
-    dimRange.addEventListener('input', (e) => {
-      const val = e.target.value;
-      bgOverlay.style.background = `rgba(9, 10, 15, ${val / 100})`;
-      localStorage.setItem('bg_dim', val);
-    });
-
-    const savedMedia = localStorage.getItem('bg_media_data');
-    const savedMediaType = localStorage.getItem('bg_media_type');
-    if (savedMedia && savedMediaType) {
-      applyMediaBackground(savedMedia, savedMediaType);
-    }
-
-    bgFileInput.addEventListener('change', (e) => {
+    bgFileInput.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target.result;
-        const type = file.type.startsWith('video') ? 'video' : 'image';
-        applyMediaBackground(dataUrl, type);
-
-        try {
-          localStorage.setItem('bg_media_data', dataUrl);
-          localStorage.setItem('bg_media_type', type);
-        } catch (err) {
-          console.warn('Файл завеликий для збереження');
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    resetBgBtn.addEventListener('click', () => {
-      bgImage.style.display = 'none';
-      bgImage.src = '';
-      bgVideo.style.display = 'none';
-      bgVideo.pause();
-      bgVideo.src = '';
-
-      localStorage.removeItem('bg_media_data');
-      localStorage.removeItem('bg_media_type');
-      localStorage.removeItem('bg_dim');
-      localStorage.removeItem('ui_scale');
-      localStorage.removeItem('ui_vertical_pos');
-      localStorage.removeItem('ui_glow_enabled');
-      localStorage.removeItem('ui_glow_radius');
-      localStorage.removeItem('ui_text_color');
-      localStorage.removeItem('ui_green_color');
-      localStorage.removeItem('ui_red_color');
-
-      dimRange.value = 65;
-      bgOverlay.style.background = `rgba(9, 10, 15, 0.65)`;
-      applyStyles();
-    });
+      const type = file.type.startsWith('video') ? 'video' : 'image';
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = URL.createObjectURL(file);
+      applyMediaBackground(currentObjectUrl, type);
+      await saveMediaBlob(file, type);
+    };
 
     function applyMediaBackground(src, type) {
       if (type === 'video') {
@@ -950,8 +1226,83 @@
       }
     }
 
+    // Клік по попередньо завантажених темах
+    document.querySelectorAll('.theme-card').forEach(card => {
+      card.onclick = () => {
+        const url = card.getAttribute('data-url');
+        localStorage.setItem('preset_bg_url', url);
+        clearMediaBlob();
+        applyMediaBackground(url, 'image');
+      };
+    });
+
+    // Збереження тем користувача (Слот 1 та Слот 2)
+    function setupUserSlot(slotId) {
+      const btn = document.getElementById(slotId + 'Btn');
+      const status = document.getElementById(slotId + 'Status');
+      const hasSaved = localStorage.getItem(slotId + '_config');
+      if (hasSaved) status.textContent = 'Застосувати';
+
+      btn.onclick = () => {
+        if (!localStorage.getItem(slotId + '_config')) {
+          // Зберегти поточні налаштування в слот
+          const config = {
+            pos: posRange.value,
+            scale: sizeRange.value,
+            dim: dimRange.value,
+            text: textColorPicker.value,
+            green: greenColorPicker.value,
+            red: redColorPicker.value,
+            glow: glowCheckbox.checked,
+            radius: glowRadiusRange.value
+          };
+          localStorage.setItem(slotId + '_config', JSON.stringify(config));
+          status.textContent = 'Застосувати';
+          alert(`Поточний стиль збережено у ${slotId.toUpperCase()}!`);
+        } else {
+          // Застосувати зі слота
+          const config = JSON.parse(localStorage.getItem(slotId + '_config'));
+          localStorage.setItem('ui_vertical_pos', config.pos);
+          localStorage.setItem('ui_scale', config.scale);
+          localStorage.setItem('bg_dim', config.dim);
+          localStorage.setItem('ui_text_color', config.text);
+          localStorage.setItem('ui_green_color', config.green);
+          localStorage.setItem('ui_red_color', config.red);
+          localStorage.setItem('ui_glow_enabled', config.glow);
+          localStorage.setItem('ui_glow_radius', config.radius);
+          applyStyles();
+          bgOverlay.style.background = `rgba(9, 10, 15, ${config.dim / 100})`;
+          dimRange.value = config.dim;
+        }
+      };
+    }
+    setupUserSlot('slot1');
+    setupUserSlot('slot2');
+
+    // Кнопка простої адмінки для зміни URL тем
+    document.getElementById('adminThemesBtn').onclick = () => {
+      const newUrl = prompt('Введіть посилання на нову картинку для теми 1:');
+      if (newUrl) {
+        document.querySelector('.theme-card').setAttribute('data-url', newUrl);
+        document.querySelector('.theme-card img').src = newUrl;
+        localStorage.setItem('admin_custom_theme_1', newUrl);
+      }
+    };
+    if (localStorage.getItem('admin_custom_theme_1')) {
+      const url = localStorage.getItem('admin_custom_theme_1');
+      document.querySelector('.theme-card').setAttribute('data-url', url);
+      document.querySelector('.theme-card img').src = url;
+    }
+
+    resetBgBtn.onclick = async () => {
+      await clearMediaBlob();
+      localStorage.clear();
+      location.reload();
+    };
+
     applyStyles();
 
+    // Селектори
     if (localStorage.getItem('saved_region')) regionSelect.value = localStorage.getItem('saved_region');
     if (localStorage.getItem('saved_queue')) queueSelect.value = localStorage.getItem('saved_queue');
 
@@ -960,87 +1311,70 @@
     }
     updateSourceLink();
 
-    fullscreenBtn.addEventListener('click', () => {
+    fullscreenBtn.onclick = () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       } else {
         if (document.exitFullscreen) document.exitFullscreen();
       }
-    });
+    };
 
-    document.addEventListener('fullscreenchange', () => {
-      fsText.textContent = document.fullscreenElement ? 'Згорнути' : 'Повний екран';
-    });
+    document.onfullscreenchange = () => {
+      fsText.textContent = document.fullscreenElement ? 'Згорнути' : 'На весь екран';
+    };
 
-    tabToday.addEventListener('click', () => {
+    tabToday.onclick = () => {
       if (currentDay === 'today' || isLoading) return;
       currentDay = 'today';
       tabToday.classList.add('active');
       tabTomorrow.classList.remove('active');
       loadSchedule();
-    });
+    };
 
-    tabTomorrow.addEventListener('click', () => {
+    tabTomorrow.onclick = () => {
       if (currentDay === 'tomorrow' || isLoading) return;
       currentDay = 'tomorrow';
       tabTomorrow.classList.add('active');
       tabToday.classList.remove('active');
       loadSchedule();
-    });
+    };
 
-    regionSelect.addEventListener('change', () => {
+    regionSelect.onchange = () => {
       localStorage.setItem('saved_region', regionSelect.value);
       updateSourceLink();
       loadSchedule();
-    });
+    };
 
-    queueSelect.addEventListener('change', () => {
+    queueSelect.onchange = () => {
       localStorage.setItem('saved_queue', queueSelect.value);
       loadSchedule();
-    });
-
-    function setControlsDisabled(disabled) {
-      regionSelect.disabled = disabled;
-      queueSelect.disabled = disabled;
-      tabToday.disabled = disabled;
-      tabTomorrow.disabled = disabled;
-    }
+    };
 
     function timeToMinutes(str) {
       const [h, m] = str.split(':').map(Number);
       return h * 60 + m;
     }
 
-    // Головна функція завантаження з наочною індикацією
     async function loadSchedule() {
       isLoading = true;
-      setControlsDisabled(true);
-
       const dayTitle = currentDay === 'tomorrow' ? 'ЗАВТРА' : 'СЬОГОДНІ';
       const queueVal = queueSelect.value;
       const regionVal = regionSelect.value;
 
-      dotLive.className = 'dot-live syncing';
-      document.getElementById('updateStatusText').textContent = 'Завантаження з сайту...';
-
-      // 1. Індикація по центру екрана
       document.getElementById('caption').textContent = `СИНХРОНІЗАЦІЯ • ${dayTitle}`;
       timerEl.className = 'main-timer loading';
       timerEl.textContent = 'ОНОВЛЕННЯ...';
       document.getElementById('hint').textContent = `Отримуємо графік для черги ${queueVal}...`;
 
-      // 2. Індикація в бічній панелі
       document.getElementById('slotsList').innerHTML = `
-        <div class="loader-box">
-          <div class="spinner"></div>
-          <div>Завантаження графіка на ${dayTitle.toLowerCase()}...</div>
+        <div style="text-align:center; padding: 40px 10px; color: #8391a5; font-size: 0.9rem;">
+          Завантаження розкладу...
         </div>
       `;
 
       try {
         const res = await fetch(`/api/status?region=${regionVal}&queue=${queueVal}&day=${currentDay}`);
         const data = await res.json();
-        
         schedule = data.slots || [];
 
         if (data.lastUpdated) {
@@ -1052,8 +1386,6 @@
         document.getElementById('updateStatusText').textContent = 'Помилка зв’язку';
       } finally {
         isLoading = false;
-        setControlsDisabled(false);
-        dotLive.className = 'dot-live';
         renderScheduleList();
         tick();
       }
@@ -1070,7 +1402,7 @@
           : 'Графік відсутній або оновлюється на сайті';
         
         listEl.innerHTML = `
-          <div style="color: #ffa502; font-size: 0.85rem; padding: 25px 12px; text-align: center; line-height: 1.4; border: 1px dashed rgba(255, 165, 2, 0.3); border-radius: 8px;">
+          <div style="color: #ffa502; font-size: 0.85rem; padding: 25px 12px; text-align: center; border: 1px dashed rgba(255, 165, 2, 0.3); border-radius: 8px;">
             ${msg}
           </div>
         `;
@@ -1095,7 +1427,7 @@
     }
 
     function tick() {
-      if (isLoading) return; // Під час завантаження таймер не перебиває напис ОНОВЛЕННЯ
+      if (isLoading) return;
 
       const captionEl = document.getElementById('caption');
       const hintEl = document.getElementById('hint');
@@ -1104,7 +1436,6 @@
 
       if (currentDay === 'tomorrow') {
         captionEl.textContent = `ПЛАН НА ЗАВТРА • ЧЕРГА ${queueSelect.value}`;
-        
         if (!schedule || schedule.length === 0) {
           timerEl.className = 'main-timer empty' + noGlowClass;
           timerEl.textContent = 'НЕМАЄ ДАНИХ';
@@ -1123,7 +1454,6 @@
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
       const currentSeconds = now.getSeconds();
-
       const offSlots = schedule.filter(s => s.status === 'off');
 
       if (!schedule || schedule.length === 0) {
@@ -1162,7 +1492,7 @@
         const upcoming = offSlots.find(slot => timeToMinutes(slot.start) > currentMinutes);
 
         if (upcoming) {
-          captionEl.textContent = "До відключення світла";
+          captionEl.textContent = "До вимкнення світла";
           captionEl.style.color = "var(--red)";
           timerEl.className = 'main-timer' + noGlowClass;
 
@@ -1188,9 +1518,8 @@
       return `${h}:${m}:${s}`;
     }
 
-    // Перший старт із показом стану завантаження
     loadSchedule();
-    setInterval(loadSchedule, 2 * 60 * 1000);
+    setInterval(loadSchedule, 30 * 60 * 1000);
     setInterval(tick, 1000);
   </script>
 </body>
