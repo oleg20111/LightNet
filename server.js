@@ -2,11 +2,100 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 app.use(express.static('public'));
 
+const PRESETS_FILE = path.join(__dirname, 'presets.json');
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+// Початкові дефолтні пресети (створюються автоматично, якщо файлу ще немає)
+const DEFAULT_PRESETS = [
+  {
+    id: 'totoro',
+    name: 'Тоторо (Живий)',
+    url: '/totoro.mp4',
+    type: 'video',
+    textColor: '#f6a090',
+    greenColor: '#48dbfb',
+    redColor: '#ff4757',
+    dim: 55,
+    pos: 72
+  },
+  {
+    id: 'emerald',
+    name: 'Смарагдовий дощ',
+    url: '/emerald-rain.mp4',
+    type: 'video',
+    textColor: '#48bb78',
+    greenColor: '#38ef7d',
+    redColor: '#55d6aa',
+    dim: 45,
+    pos: 50
+  },
+  {
+    id: 'minimal',
+    name: 'Мінімал',
+    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800',
+    type: 'image',
+    textColor: '#a4b0be',
+    greenColor: '#2ed573',
+    redColor: '#ff4757',
+    dim: 65,
+    pos: 50
+  }
+];
+
+function getPresets() {
+  try {
+    if (!fs.existsSync(PRESETS_FILE)) {
+      fs.writeFileSync(PRESETS_FILE, JSON.stringify(DEFAULT_PRESETS, null, 2), 'utf-8');
+      return DEFAULT_PRESETS;
+    }
+    const data = fs.readFileSync(PRESETS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (e) {
+    console.error('Error reading presets:', e.message);
+    return DEFAULT_PRESETS;
+  }
+}
+
+function savePresets(presets) {
+  fs.writeFileSync(PRESETS_FILE, JSON.stringify(presets, null, 2), 'utf-8');
+}
+
+// 1. Публічний API отримання пресетів для клієнтів
+app.get('/api/presets', (req, res) => {
+  res.json(getPresets());
+});
+
+// 2. Маршрут до адмінки
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// 3. API збереження пресетів (з перевіркою пароля)
+app.post('/api/admin/presets', (req, res) => {
+  const { password, presets } = req.body;
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Невірний пароль адміністратора' });
+  }
+  if (!Array.isArray(presets)) {
+    return res.status(400).json({ error: 'Некоректний формат списку' });
+  }
+  try {
+    savePresets(presets);
+    res.json({ success: true, presets });
+  } catch (err) {
+    res.status(500).json({ error: 'Помилка запису файлу пресетів' });
+  }
+});
+
+// --- Парсинг bezsvitla.com.ua ---
 const cache = new Map();
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -27,23 +116,15 @@ async function fetchScheduleData(regionSlug, targetQueue, day = 'today') {
   });
 
   const $ = cheerio.load(response.data);
-  let slots = [];
-
-  // Шукаємо заголовок саме потрібної черги
   let targetCard = null;
 
   $('*').each((_, el) => {
-    if (targetCard) return; // вже знайшли
-
+    if (targetCard) return;
     const text = $(el).text().trim();
-    // Шукаємо точний збіг назви черги (Черга 3.2 або 3.2)
     if (text === `Черга ${targetQueue}` || text === `Черга: ${targetQueue}`) {
-      // Піднімаємося вгору крок за кроком, доки не знайдемо блок картки,
-      // але зупиняємося ДО того, як батько захопить інші черги (наприклад, "Черга 1.1")
       let current = $(el).parent();
       while (current.length && current[0].tagName !== 'body') {
         const parentText = current.parent().text() || '';
-        // Якщо батьківський елемент вже містить інші черги — значить поточний `current` і є карткою нашої черги!
         const queueMatches = parentText.match(/Черга\s+\d/g) || [];
         if (queueMatches.length > 1) {
           targetCard = current;
@@ -55,21 +136,17 @@ async function fetchScheduleData(regionSlug, targetQueue, day = 'today') {
     }
   });
 
+  let slots = [];
   if (targetCard && targetCard.length) {
-    // Шукаємо інтервали тільки всередині знайденої ізольованої картки
     targetCard.find('div, li, tr').each((_, row) => {
       const rowText = $(row).text().trim();
       const match = rowText.match(/^(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})$/);
-      
-      // Переконуємось, що це чистий рядок часу без вкладених інших годин
       if (match && (rowText.match(/(\d{1,2}:\d{2})/g) || []).length === 2) {
         const start = match[1];
         let end = match[2];
         if (end === '24:00') end = '23:59';
 
         const html = $(row).html().toLowerCase();
-        
-        // Ознаки відключення (блискавка, червоний колір, рожевий бейдж)
         const isOff = html.includes('rgb(254') || 
                       html.includes('rgb(255') || 
                       html.includes('rose') || 
@@ -85,7 +162,6 @@ async function fetchScheduleData(regionSlug, targetQueue, day = 'today') {
     });
   }
 
-  // Сортуємо розклад за часом
   slots.sort((a, b) => a.start.localeCompare(b.start));
 
   const result = {

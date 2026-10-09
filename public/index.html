@@ -1365,40 +1365,75 @@
       }
     }
 
-    // 1. Клік по пресетній темі: перемикає фон ТА адаптує кольори/положення
-    document.querySelectorAll('#presetThemeGrid .theme-card').forEach(card => {
-      card.onclick = () => {
-        const url = card.getAttribute('data-url');
-        const type = card.getAttribute('data-type') || 'image';
-        
-        // Зчитуємо колірну палітру пресету
-        const textColor = card.getAttribute('data-text-color');
-        const greenColor = card.getAttribute('data-green-color');
-        const redColor = card.getAttribute('data-red-color');
-        const dim = card.getAttribute('data-dim');
-        const pos = card.getAttribute('data-pos');
+// Динамічне завантаження спільних пресетів із сервера
+    async function loadGlobalPresets() {
+      const grid = document.getElementById('presetThemeGrid');
+      if (!grid) return;
 
-        if (textColor) localStorage.setItem('ui_text_color', textColor);
-        if (greenColor) localStorage.setItem('ui_green_color', greenColor);
-        if (redColor) localStorage.setItem('ui_red_color', redColor);
-        if (dim) {
-          localStorage.setItem('bg_dim', dim);
-          dimRange.value = dim;
-          bgOverlay.style.background = `rgba(9, 10, 15, ${dim / 100})`;
-        }
-        if (pos) {
-          localStorage.setItem('ui_vertical_pos', pos);
-          posRange.value = pos;
-        }
+      try {
+        const res = await fetch('/api/presets');
+        const list = await res.json();
 
-        applyStyles();
+        grid.innerHTML = list.map(item => {
+          const mediaHtml = item.type === 'video'
+            ? `<video src="${item.url}" autoplay loop muted playsinline></video>`
+            : `<img src="${item.url}" alt="${item.name}" />`;
 
-        localStorage.setItem('preset_bg_url', url);
-        localStorage.setItem('preset_bg_type', type);
-        clearMediaBlob();
-        applyMediaBackground(url, type);
-      };
-    });
+          return `
+            <div class="theme-card"
+                 data-url="${item.url}"
+                 data-type="${item.type || 'image'}"
+                 data-text-color="${item.textColor || '#a4b0be'}"
+                 data-green-color="${item.greenColor || '#2ed573'}"
+                 data-red-color="${item.redColor || '#ff4757'}"
+                 data-dim="${item.dim || 55}"
+                 data-pos="${item.pos || 50}"
+                 title="${item.name}">
+              ${mediaHtml}
+              <span>${item.name}</span>
+            </div>
+          `;
+        }).join('');
+
+        // Додаємо подію кліку на кожну згенеровану картку
+        grid.querySelectorAll('.theme-card').forEach(card => {
+          card.onclick = () => {
+            const url = card.getAttribute('data-url');
+            const type = card.getAttribute('data-type') || 'image';
+
+            const textColor = card.getAttribute('data-text-color');
+            const greenColor = card.getAttribute('data-green-color');
+            const redColor = card.getAttribute('data-red-color');
+            const dim = card.getAttribute('data-dim');
+            const pos = card.getAttribute('data-pos');
+
+            if (textColor) localStorage.setItem('ui_text_color', textColor);
+            if (greenColor) localStorage.setItem('ui_green_color', greenColor);
+            if (redColor) localStorage.setItem('ui_red_color', redColor);
+            if (dim) {
+              localStorage.setItem('bg_dim', dim);
+              dimRange.value = dim;
+              bgOverlay.style.background = `rgba(9, 10, 15, ${dim / 100})`;
+            }
+            if (pos) {
+              localStorage.setItem('ui_vertical_pos', pos);
+              posRange.value = pos;
+            }
+
+            applyStyles();
+
+            localStorage.setItem('preset_bg_url', url);
+            localStorage.setItem('preset_bg_type', type);
+            clearMediaBlob();
+            applyMediaBackground(url, type);
+          };
+        });
+      } catch (err) {
+        console.warn('Не вдалося завантажити пресети з сервера', err);
+      }
+    }
+
+    loadGlobalPresets();
 
     // 3 власні теми
     function setupUserTile(slotNum) {
