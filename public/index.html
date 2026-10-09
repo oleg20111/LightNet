@@ -31,7 +31,6 @@
       user-select: none;
     }
 
-    /* Фоновий медіа контейнер */
     .bg-media-container {
       position: absolute;
       top: 0;
@@ -63,7 +62,7 @@
       transition: background 0.3s;
     }
 
-    /* 3. Верхня висувна панель (Область та Черга при наведенні) */
+    /* Верхня висувна панель */
     .top-drawer-container {
       position: absolute;
       top: 0;
@@ -161,7 +160,6 @@
       pointer-events: none;
     }
 
-    /* Кнопка на весь екран */
     .fullscreen-btn {
       position: absolute;
       top: 24px;
@@ -262,7 +260,7 @@
       transition: color 0.2s;
     }
 
-    /* 2. Права бічна панель (Графік у стилі надісланої картинки) */
+    /* Права панель графіка */
     .drawer-container {
       position: absolute;
       top: 0;
@@ -349,7 +347,6 @@
       color: #fff;
     }
 
-    /* Таймлайн-список зі з'єднувальною лінією */
     .hours-strip {
       display: flex;
       flex-direction: column;
@@ -389,13 +386,8 @@
       z-index: 1;
     }
 
-    .timeline-item:first-child::before {
-      top: 50%;
-    }
-
-    .timeline-item:last-child::before {
-      bottom: 50%;
-    }
+    .timeline-item:first-child::before { top: 50%; }
+    .timeline-item:last-child::before { bottom: 50%; }
 
     .timeline-item.current {
       border-color: rgba(255, 255, 255, 0.35);
@@ -430,14 +422,14 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Значки On / Off як на картинці */
+    /* Чисті бейджі: Світло є / Відключення (без ВКЛ/ВИКЛ) */
     .status-pill-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 10px;
+      padding: 5px 11px;
       border-radius: 9px;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.3px;
       z-index: 2;
@@ -657,7 +649,7 @@
       cursor: pointer;
       background: #11141c;
       transition: all 0.2s;
-      height: 65px;
+      height: 68px;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -669,7 +661,7 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
       object-fit: cover;
-      opacity: 0.55;
+      opacity: 0.6;
     }
 
     .theme-card span {
@@ -679,6 +671,9 @@
       font-weight: 600;
       color: #fff;
       text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .theme-card:hover {
@@ -686,61 +681,39 @@
       transform: translateY(-2px);
     }
 
-    /* 1. Блок власних тем (з можливістю збереження, перезапису та скидання) */
-    .custom-slots-col {
+    /* Кнопки збереження/видалення всередині плитки власної теми */
+    .user-slot-tools {
+      position: absolute;
+      top: 4px;
+      right: 4px;
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 4px;
+      gap: 4px;
+      z-index: 3;
     }
 
-    .user-slot-card {
+    .slot-mini-btn {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      font-size: 10px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: rgba(255, 255, 255, 0.04);
-      gap: 8px;
-    }
-
-    .slot-info-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #f1f2f6;
-    }
-
-    .slot-btn-group {
-      display: flex;
-      gap: 6px;
-    }
-
-    .slot-act-btn {
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      background: rgba(255, 255, 255, 0.08);
-      color: #cbd5e1;
-      font-size: 0.75rem;
-      font-weight: 600;
+      justify-content: center;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
     }
 
-    .slot-act-btn:hover {
-      background: rgba(255, 255, 255, 0.18);
-      color: #fff;
+    .slot-mini-btn:hover {
+      background: rgba(46, 213, 115, 0.8);
+      border-color: #2ed573;
     }
 
-    .slot-act-btn.apply {
-      background: rgba(46, 213, 115, 0.2);
-      border-color: rgba(46, 213, 115, 0.4);
-      color: #2ed573;
-    }
-
-    .slot-act-btn.apply:hover {
-      background: rgba(46, 213, 115, 0.35);
+    .slot-mini-btn.del:hover {
+      background: rgba(255, 71, 87, 0.8);
+      border-color: #ff4757;
     }
 
     .btn-file-upload {
@@ -852,7 +825,6 @@
       color: #fff;
     }
 
-    /* Модальне вікно */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -898,10 +870,9 @@
   </div>
   <div class="bg-overlay" id="bgOverlay"></div>
 
-  <!-- 3. Верхня висувна панель (Область та Черга при наведенні) -->
+  <!-- Верхня висувна панель: Область та Черга -->
   <div class="top-drawer-container">
     <div class="controls-meta">
-      <!-- Область -->
       <div class="pill-select-wrapper">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="#ff4757">
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
@@ -922,7 +893,6 @@
         <span class="pill-chevron">▼</span>
       </div>
 
-      <!-- Черга -->
       <div class="pill-select-wrapper">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="#ffa502">
           <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
@@ -964,7 +934,7 @@
     <div class="next-slot-hint" id="hint">Отримуємо актуальний розклад з сервера</div>
   </main>
 
-  <!-- 2. Права панель графіка (Timeline дизайн як на зображенні) -->
+  <!-- Права панель графіка -->
   <div class="drawer-container">
     <div class="drawer-handle">
       <span>ГРАФІК</span>
@@ -987,7 +957,6 @@
     <div class="bg-controls-panel">
       <div class="card-top-title-row">
         <div class="card-top-title">Фон та стиль</div>
-        <!-- Кружечки кольорів: Текст, Вкл, Викл -->
         <div class="color-block-group">
           <div class="color-item">
             <span class="color-item-label">Текст</span>
@@ -1058,28 +1027,39 @@
         </div>
       </div>
 
-      <!-- 1. Власні збережені теми (перезапис / застосування / очищення) -->
-      <div class="themes-title-row" style="margin-top: 4px;">
-        <span class="theme-header-txt">Мої власні теми (ПК)</span>
+      <!-- 3 ВЛАСНІ ТЕМИ (квадратна сітка з прев'ю-логотипом як у вибраних фонах) -->
+      <div class="themes-title-row" style="margin-top: 6px;">
+        <span class="theme-header-txt">Мої власні теми (3 слоти)</span>
       </div>
-      <div class="custom-slots-col">
+      <div class="theme-grid" id="userThemeGrid">
         <!-- Слот 1 -->
-        <div class="user-slot-card">
-          <span class="slot-info-title" id="slot1Title">Слот 1 (порожньо)</span>
-          <div class="slot-btn-group">
-            <button class="slot-act-btn apply" id="slot1ApplyBtn" style="display:none;">Застосувати</button>
-            <button class="slot-act-btn" id="slot1SaveBtn">Зберегти</button>
-            <button class="slot-act-btn" id="slot1ClearBtn" style="display:none; color:#ff4757;">✕</button>
+        <div class="theme-card" id="slotCard1" title="Натисніть для застосування">
+          <img id="slotThumb1" style="display:none;" />
+          <div class="user-slot-tools">
+            <button class="slot-mini-btn" id="slotSave1" title="Зберегти поточний фон і стиль">💾</button>
+            <button class="slot-mini-btn del" id="slotDel1" title="Очистити" style="display:none;">✕</button>
           </div>
+          <span id="slotLabel1">Слот 1</span>
         </div>
+
         <!-- Слот 2 -->
-        <div class="user-slot-card">
-          <span class="slot-info-title" id="slot2Title">Слот 2 (порожньо)</span>
-          <div class="slot-btn-group">
-            <button class="slot-act-btn apply" id="slot2ApplyBtn" style="display:none;">Застосувати</button>
-            <button class="slot-act-btn" id="slot2SaveBtn">Зберегти</button>
-            <button class="slot-act-btn" id="slot2ClearBtn" style="display:none; color:#ff4757;">✕</button>
+        <div class="theme-card" id="slotCard2" title="Натисніть для застосування">
+          <img id="slotThumb2" style="display:none;" />
+          <div class="user-slot-tools">
+            <button class="slot-mini-btn" id="slotSave2" title="Зберегти поточний фон і стиль">💾</button>
+            <button class="slot-mini-btn del" id="slotDel2" title="Очистити" style="display:none;">✕</button>
           </div>
+          <span id="slotLabel2">Слот 2</span>
+        </div>
+
+        <!-- Слот 3 -->
+        <div class="theme-card" id="slotCard3" title="Натисніть для застосування">
+          <img id="slotThumb3" style="display:none;" />
+          <div class="user-slot-tools">
+            <button class="slot-mini-btn" id="slotSave3" title="Зберегти поточний фон і стиль">💾</button>
+            <button class="slot-mini-btn del" id="slotDel3" title="Очистити" style="display:none;">✕</button>
+          </div>
+          <span id="slotLabel3">Слот 3</span>
         </div>
       </div>
 
@@ -1123,7 +1103,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal-box">
       <h3>Про сервіс LightNet</h3>
-      <p>LightNet — це незалежний естетичний монітор графіків погодинних відключень електроенергії в Україні. Дані автоматично агрегуються з відкритого джерела bezsvitla.com.ua.</p>
+      <p>LightNet — це естетичний монітор графіків погодинних відключень електроенергії в Україні. Дані автоматично агрегуються з відкритого джерела bezsvitla.com.ua.</p>
       <p>Всі параметри таймера, завантажені відео та фонові стилі надійно зберігаються на вашому пристрої.</p>
       <button class="modal-close-btn" id="closeModalBtn">Зрозуміло</button>
     </div>
@@ -1134,7 +1114,7 @@
     let schedule = [];
     let isLoading = false;
 
-    // --- INDEXEDDB ДЛЯ МЕДІА ---
+    // --- INDEXEDDB ДЛЯ МЕДІА ТА ПРЕВ'Ю ---
     const DB_NAME = 'LightNetMediaDB';
     const DB_STORE = 'backgrounds';
 
@@ -1184,6 +1164,33 @@
         tx.objectStore(DB_STORE).delete(key);
         tx.objectStore(DB_STORE).delete(key + '_type');
         tx.oncomplete = () => resolve();
+      });
+    }
+
+    // Генерація статичного зображення-прев'ю (для відео або картинки)
+    function captureThumbnail(blob, type) {
+      return new Promise((resolve) => {
+        if (type === 'image') {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(blob);
+        } else {
+          // Якщо відео: створюємо тимчасовий відеоплеєр і знімаємо перший кадр на canvas
+          const video = document.createElement('video');
+          video.src = URL.createObjectURL(blob);
+          video.muted = true;
+          video.playsInline = true;
+          video.currentTime = 0.5;
+          video.onloadeddata = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 160;
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          video.onerror = () => resolve('');
+        }
       });
     }
 
@@ -1325,7 +1332,7 @@
       }
     }
 
-    document.querySelectorAll('.theme-card').forEach(card => {
+    document.querySelectorAll('#presetThemeGrid .theme-card').forEach(card => {
       card.onclick = () => {
         const url = card.getAttribute('data-url');
         localStorage.setItem('preset_bg_url', url);
@@ -1334,59 +1341,38 @@
       };
     });
 
-    // 1. Повноцінне керування темами користувача: Зберегти, Перезаписати, Застосувати, Очистити
-    function setupUserSlot(slotId) {
-      const titleEl = document.getElementById(slotId + 'Title');
-      const applyBtn = document.getElementById(slotId + 'ApplyBtn');
-      const saveBtn = document.getElementById(slotId + 'SaveBtn');
-      const clearBtn = document.getElementById(slotId + 'ClearBtn');
+    // --- 3 ВЛАСНІ ТЕМИ (ПЛИТКИ З ЛОГОТИПОМ/ПРЕВ'Ю) ---
+    function setupUserTile(slotNum) {
+      const card = document.getElementById(`slotCard${slotNum}`);
+      const thumb = document.getElementById(`slotThumb${slotNum}`);
+      const label = document.getElementById(`slotLabel${slotNum}`);
+      const saveBtn = document.getElementById(`slotSave${slotNum}`);
+      const delBtn = document.getElementById(`slotDel${slotNum}`);
 
-      function updateSlotUI() {
-        const saved = localStorage.getItem(slotId + '_config');
+      function refreshTile() {
+        const saved = localStorage.getItem(`custom_slot_${slotNum}_cfg`);
+        const savedThumb = localStorage.getItem(`custom_slot_${slotNum}_thumb`);
         if (saved) {
-          titleEl.textContent = `${slotId === 'slot1' ? 'Слот 1' : 'Слот 2'} (збережено)`;
-          applyBtn.style.display = 'inline-block';
-          saveBtn.textContent = 'Перезаписати';
-          clearBtn.style.display = 'inline-block';
+          label.textContent = `Тема ${slotNum}`;
+          delBtn.style.display = 'flex';
+          if (savedThumb) {
+            thumb.src = savedThumb;
+            thumb.style.display = 'block';
+          }
         } else {
-          titleEl.textContent = `${slotId === 'slot1' ? 'Слот 1' : 'Слот 2'} (порожньо)`;
-          applyBtn.style.display = 'none';
-          saveBtn.textContent = 'Зберегти';
-          clearBtn.style.display = 'none';
+          label.textContent = `Слот ${slotNum}`;
+          delBtn.style.display = 'none';
+          thumb.style.display = 'none';
+          thumb.src = '';
         }
       }
 
-      // Збереження / перезапис
-      saveBtn.onclick = async () => {
-        const config = {
-          pos: posRange.value,
-          scale: sizeRange.value,
-          dim: dimRange.value,
-          text: textColorPicker.value,
-          green: greenColorPicker.value,
-          red: redColorPicker.value,
-          glow: glowCheckbox.checked,
-          radius: glowRadiusRange.value,
-          presetUrl: localStorage.getItem('preset_bg_url') || ''
-        };
-        localStorage.setItem(slotId + '_config', JSON.stringify(config));
-
-        // Зберігаємо також копію активного медіа у цей слот
-        const activeMedia = await loadMediaBlob('saved_media_file');
-        if (activeMedia) {
-          await saveMediaBlob(activeMedia.blob, activeMedia.type, slotId + '_media');
-        } else {
-          await clearMediaBlob(slotId + '_media');
-        }
-
-        updateSlotUI();
-      };
-
-      // Застосування
-      applyBtn.onclick = async () => {
-        const configStr = localStorage.getItem(slotId + '_config');
-        if (!configStr) return;
-        const config = JSON.parse(configStr);
+      // Клік по плитці — застосувати тему
+      card.onclick = async (e) => {
+        if (e.target === saveBtn || e.target === delBtn) return;
+        const saved = localStorage.getItem(`custom_slot_${slotNum}_cfg`);
+        if (!saved) return;
+        const config = JSON.parse(saved);
 
         localStorage.setItem('ui_vertical_pos', config.pos);
         localStorage.setItem('ui_scale', config.scale);
@@ -1401,8 +1387,7 @@
         bgOverlay.style.background = `rgba(9, 10, 15, ${config.dim / 100})`;
         dimRange.value = config.dim;
 
-        // Відновлюємо збережене медіа з цього слота
-        const slotMedia = await loadMediaBlob(slotId + '_media');
+        const slotMedia = await loadMediaBlob(`custom_slot_${slotNum}_media`);
         if (slotMedia) {
           await saveMediaBlob(slotMedia.blob, slotMedia.type, 'saved_media_file');
           if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
@@ -1415,37 +1400,71 @@
         }
       };
 
-      // Очищення слота
-      clearBtn.onclick = async () => {
-        localStorage.removeItem(slotId + '_config');
-        await clearMediaBlob(slotId + '_media');
-        updateSlotUI();
+      // Клік по 💾 — зберегти або перезаписати
+      saveBtn.onclick = async (e) => {
+        e.stopPropagation();
+        const config = {
+          pos: posRange.value,
+          scale: sizeRange.value,
+          dim: dimRange.value,
+          text: textColorPicker.value,
+          green: greenColorPicker.value,
+          red: redColorPicker.value,
+          glow: glowCheckbox.checked,
+          radius: glowRadiusRange.value,
+          presetUrl: localStorage.getItem('preset_bg_url') || ''
+        };
+        localStorage.setItem(`custom_slot_${slotNum}_cfg`, JSON.stringify(config));
+
+        const activeMedia = await loadMediaBlob('saved_media_file');
+        if (activeMedia) {
+          await saveMediaBlob(activeMedia.blob, activeMedia.type, `custom_slot_${slotNum}_media`);
+          const thumbDataUrl = await captureThumbnail(activeMedia.blob, activeMedia.type);
+          if (thumbDataUrl) {
+            localStorage.setItem(`custom_slot_${slotNum}_thumb`, thumbDataUrl);
+          }
+        } else if (config.presetUrl) {
+          localStorage.setItem(`custom_slot_${slotNum}_thumb`, config.presetUrl);
+        }
+
+        refreshTile();
       };
 
-      updateSlotUI();
+      // Клік по ✕ — очистити
+      delBtn.onclick = async (e) => {
+        e.stopPropagation();
+        localStorage.removeItem(`custom_slot_${slotNum}_cfg`);
+        localStorage.removeItem(`custom_slot_${slotNum}_thumb`);
+        await clearMediaBlob(`custom_slot_${slotNum}_media`);
+        refreshTile();
+      };
+
+      refreshTile();
     }
 
-    setupUserSlot('slot1');
-    setupUserSlot('slot2');
+    setupUserTile(1);
+    setupUserTile(2);
+    setupUserTile(3);
 
     document.getElementById('adminThemesBtn').onclick = () => {
       const newUrl = prompt('Введіть посилання на нову картинку для теми 1:');
       if (newUrl) {
-        document.querySelector('.theme-card').setAttribute('data-url', newUrl);
-        document.querySelector('.theme-card img').src = newUrl;
+        document.querySelector('#presetThemeGrid .theme-card').setAttribute('data-url', newUrl);
+        document.querySelector('#presetThemeGrid .theme-card img').src = newUrl;
         localStorage.setItem('admin_custom_theme_1', newUrl);
       }
     };
     if (localStorage.getItem('admin_custom_theme_1')) {
       const url = localStorage.getItem('admin_custom_theme_1');
-      document.querySelector('.theme-card').setAttribute('data-url', url);
-      document.querySelector('.theme-card img').src = url;
+      document.querySelector('#presetThemeGrid .theme-card').setAttribute('data-url', url);
+      document.querySelector('#presetThemeGrid .theme-card img').src = url;
     }
 
     resetBgBtn.onclick = async () => {
       await clearMediaBlob('saved_media_file');
-      await clearMediaBlob('slot1_media');
-      await clearMediaBlob('slot2_media');
+      await clearMediaBlob('custom_slot_1_media');
+      await clearMediaBlob('custom_slot_2_media');
+      await clearMediaBlob('custom_slot_3_media');
       localStorage.clear();
       location.reload();
     };
@@ -1540,7 +1559,7 @@
       }
     }
 
-    // 2. Рендеринг таймлайн-графіка як на картинці з підписами українською
+    // Рендеринг таймлайну без "ВКЛ" та "ВИКЛ"
     function renderScheduleList() {
       const listEl = document.getElementById('slotsList');
       const now = new Date();
@@ -1565,7 +1584,6 @@
         const isCurrent = (currentDay === 'today') && (currentMinutes >= sMin && currentMinutes < eMin);
         const isOff = slot.status === 'off';
 
-        // Іконка ліворуч на таймлайні
         let leftIcon = '';
         if (isOff) {
           leftIcon = `
@@ -1579,19 +1597,18 @@
               <circle cx="12" cy="12" r="5"/>
               <line x1="12" y1="1" x2="12" y2="4" stroke="#2ed573" stroke-width="2"/>
               <line x1="12" y1="20" x2="12" y2="23" stroke="#2ed573" stroke-width="2"/>
-              <line x1="1" y1="12" x2="4" y2="12" stroke="#2ed573" stroke-width="2"/>
+              <line x1="12" y1="1" x2="12" y2="4" stroke="#2ed573" stroke-width="2"/>
               <line x1="20" y1="12" x2="23" y2="12" stroke="#2ed573" stroke-width="2"/>
             </svg>
           `;
         }
 
-        // Бейдж праворуч
         const badgeContent = isOff ? `
           <span class="status-pill-badge off">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
             </svg>
-            ВИКЛ Відключення
+            Відключення
           </span>
         ` : `
           <span class="status-pill-badge on">
@@ -1599,7 +1616,7 @@
               <path d="M9 18h6"/><path d="M10 22h4"/>
               <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/>
             </svg>
-            ВКЛ Світло є
+            Світло є
           </span>
         `;
 
