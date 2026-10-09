@@ -15,7 +15,7 @@
       --green: #2ed573;
       --timer-scale: 1;
       --glow-radius: 25px;
-      --vertical-pos: 68%;
+      --vertical-pos: 72%;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,6 +31,7 @@
       user-select: none;
     }
 
+    /* Фоновий медіа контейнер */
     .bg-media-container {
       position: absolute;
       top: 0;
@@ -56,7 +57,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(9, 10, 15, 0.6);
+      background: rgba(9, 10, 15, 0.55);
       z-index: 1;
       pointer-events: none;
       transition: background 0.3s;
@@ -422,7 +423,6 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Чисті бейджі: Світло є / Відключення (без ВКЛ/ВИКЛ) */
     .status-pill-badge {
       display: inline-flex;
       align-items: center;
@@ -656,12 +656,14 @@
       padding: 6px 8px;
     }
 
-    .theme-card img {
+    .theme-card img,
+    .theme-card video {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
       object-fit: cover;
-      opacity: 0.6;
+      opacity: 0.65;
+      pointer-events: none;
     }
 
     .theme-card span {
@@ -681,7 +683,6 @@
       transform: translateY(-2px);
     }
 
-    /* Кнопки збереження/видалення всередині плитки власної теми */
     .user-slot-tools {
       position: absolute;
       top: 4px;
@@ -863,14 +864,14 @@
 </head>
 <body>
 
-  <!-- Фон (відео / фото) -->
+  <!-- Фон -->
   <div class="bg-media-container">
     <img id="bgImage" alt="Фон" />
     <video id="bgVideo" autoplay loop muted playsinline></video>
   </div>
   <div class="bg-overlay" id="bgOverlay"></div>
 
-  <!-- Верхня висувна панель: Область та Черга -->
+  <!-- Верхня панель: Область та Черга -->
   <div class="top-drawer-container">
     <div class="controls-meta">
       <div class="pill-select-wrapper">
@@ -981,7 +982,7 @@
 
       <div class="ctrl-grid-row">
         <span class="ctrl-label">Вертикальне положення</span>
-        <input type="range" id="posRange" min="20" max="88" value="68" />
+        <input type="range" id="posRange" min="20" max="88" value="72" />
       </div>
 
       <div class="ctrl-grid-row">
@@ -991,7 +992,7 @@
 
       <div class="ctrl-grid-row">
         <span class="ctrl-label">Затемнення фону</span>
-        <input type="range" id="dimRange" min="0" max="95" value="60" />
+        <input type="range" id="dimRange" min="0" max="95" value="55" />
       </div>
 
       <div class="ctrl-grid-row">
@@ -1007,32 +1008,32 @@
         </label>
       </div>
 
-      <!-- Пресетні теми -->
+      <!-- Пресетні теми (Перший пресет — відео Тоторо) -->
       <div class="themes-title-row">
         <span class="theme-header-txt">Обрані фони (Пресетні)</span>
         <button class="btn-sub" id="adminThemesBtn">Редагувати теми</button>
       </div>
       <div class="theme-grid" id="presetThemeGrid">
-        <div class="theme-card" data-url="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800">
-          <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=300" alt="Ніч" />
-          <span>Нічний ліс</span>
+        <!-- 1 ПРЕСЕТ: Відео Тоторо -->
+        <div class="theme-card" data-url="/totoro.mp4" data-type="video" title="Тоторо (Живий)">
+          <video src="/totoro.mp4" autoplay loop muted playsinline></video>
+          <span>Тоторо (Живий)</span>
         </div>
-        <div class="theme-card" data-url="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800">
+        <div class="theme-card" data-url="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800" data-type="image">
           <img src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=300" alt="Cyber" />
           <span>Кіберпанк</span>
         </div>
-        <div class="theme-card" data-url="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800">
+        <div class="theme-card" data-url="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800" data-type="image">
           <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=300" alt="Dark" />
           <span>Мінімал</span>
         </div>
       </div>
 
-      <!-- 3 ВЛАСНІ ТЕМИ (квадратна сітка з прев'ю-логотипом як у вибраних фонах) -->
+      <!-- Власні теми користувача (3 слоти) -->
       <div class="themes-title-row" style="margin-top: 6px;">
         <span class="theme-header-txt">Мої власні теми (3 слоти)</span>
       </div>
       <div class="theme-grid" id="userThemeGrid">
-        <!-- Слот 1 -->
         <div class="theme-card" id="slotCard1" title="Натисніть для застосування">
           <img id="slotThumb1" style="display:none;" />
           <div class="user-slot-tools">
@@ -1042,7 +1043,6 @@
           <span id="slotLabel1">Слот 1</span>
         </div>
 
-        <!-- Слот 2 -->
         <div class="theme-card" id="slotCard2" title="Натисніть для застосування">
           <img id="slotThumb2" style="display:none;" />
           <div class="user-slot-tools">
@@ -1052,7 +1052,6 @@
           <span id="slotLabel2">Слот 2</span>
         </div>
 
-        <!-- Слот 3 -->
         <div class="theme-card" id="slotCard3" title="Натисніть для застосування">
           <img id="slotThumb3" style="display:none;" />
           <div class="user-slot-tools">
@@ -1114,7 +1113,7 @@
     let schedule = [];
     let isLoading = false;
 
-    // --- INDEXEDDB ДЛЯ МЕДІА ТА ПРЕВ'Ю ---
+    // --- INDEXEDDB ДЛЯ МЕДІА ---
     const DB_NAME = 'LightNetMediaDB';
     const DB_STORE = 'backgrounds';
 
@@ -1167,7 +1166,6 @@
       });
     }
 
-    // Генерація статичного зображення-прев'ю (для відео або картинки)
     function captureThumbnail(blob, type) {
       return new Promise((resolve) => {
         if (type === 'image') {
@@ -1175,7 +1173,6 @@
           reader.onload = e => resolve(e.target.result);
           reader.readAsDataURL(blob);
         } else {
-          // Якщо відео: створюємо тимчасовий відеоплеєр і знімаємо перший кадр на canvas
           const video = document.createElement('video');
           video.src = URL.createObjectURL(blob);
           video.muted = true;
@@ -1223,7 +1220,7 @@
 
     function applyStyles() {
       const scale = (localStorage.getItem('ui_scale') || 100) / 100;
-      const verticalPos = localStorage.getItem('ui_vertical_pos') || 68;
+      const verticalPos = localStorage.getItem('ui_vertical_pos') || 72;
       const textColor = localStorage.getItem('ui_text_color') || '#a4b0be';
       const greenColor = localStorage.getItem('ui_green_color') || '#2ed573';
       const redColor = localStorage.getItem('ui_red_color') || '#ff4757';
@@ -1289,7 +1286,7 @@
       localStorage.setItem('ui_red_color', e.target.value);
     };
 
-    const savedDim = localStorage.getItem('bg_dim') || 60;
+    const savedDim = localStorage.getItem('bg_dim') || 55;
     dimRange.value = savedDim;
     bgOverlay.style.background = `rgba(9, 10, 15, ${savedDim / 100})`;
     dimRange.oninput = (e) => {
@@ -1303,8 +1300,9 @@
         currentObjectUrl = URL.createObjectURL(data.blob);
         applyMediaBackground(currentObjectUrl, data.type);
       } else {
-        const savedUrl = localStorage.getItem('preset_bg_url');
-        if (savedUrl) applyMediaBackground(savedUrl, 'image');
+        const savedUrl = localStorage.getItem('preset_bg_url') || '/totoro.mp4';
+        const savedType = localStorage.getItem('preset_bg_type') || 'video';
+        applyMediaBackground(savedUrl, savedType);
       }
     });
 
@@ -1332,16 +1330,19 @@
       }
     }
 
+    // Клік по пресетній темі
     document.querySelectorAll('#presetThemeGrid .theme-card').forEach(card => {
       card.onclick = () => {
         const url = card.getAttribute('data-url');
+        const type = card.getAttribute('data-type') || 'image';
         localStorage.setItem('preset_bg_url', url);
+        localStorage.setItem('preset_bg_type', type);
         clearMediaBlob();
-        applyMediaBackground(url, 'image');
+        applyMediaBackground(url, type);
       };
     });
 
-    // --- 3 ВЛАСНІ ТЕМИ (ПЛИТКИ З ЛОГОТИПОМ/ПРЕВ'Ю) ---
+    // 3 власні теми
     function setupUserTile(slotNum) {
       const card = document.getElementById(`slotCard${slotNum}`);
       const thumb = document.getElementById(`slotThumb${slotNum}`);
@@ -1367,7 +1368,6 @@
         }
       }
 
-      // Клік по плитці — застосувати тему
       card.onclick = async (e) => {
         if (e.target === saveBtn || e.target === delBtn) return;
         const saved = localStorage.getItem(`custom_slot_${slotNum}_cfg`);
@@ -1395,12 +1395,12 @@
           applyMediaBackground(currentObjectUrl, slotMedia.type);
         } else if (config.presetUrl) {
           localStorage.setItem('preset_bg_url', config.presetUrl);
+          localStorage.setItem('preset_bg_type', config.presetType || 'image');
           clearMediaBlob('saved_media_file');
-          applyMediaBackground(config.presetUrl, 'image');
+          applyMediaBackground(config.presetUrl, config.presetType || 'image');
         }
       };
 
-      // Клік по 💾 — зберегти або перезаписати
       saveBtn.onclick = async (e) => {
         e.stopPropagation();
         const config = {
@@ -1412,7 +1412,8 @@
           red: redColorPicker.value,
           glow: glowCheckbox.checked,
           radius: glowRadiusRange.value,
-          presetUrl: localStorage.getItem('preset_bg_url') || ''
+          presetUrl: localStorage.getItem('preset_bg_url') || '',
+          presetType: localStorage.getItem('preset_bg_type') || 'image'
         };
         localStorage.setItem(`custom_slot_${slotNum}_cfg`, JSON.stringify(config));
 
@@ -1430,7 +1431,6 @@
         refreshTile();
       };
 
-      // Клік по ✕ — очистити
       delBtn.onclick = async (e) => {
         e.stopPropagation();
         localStorage.removeItem(`custom_slot_${slotNum}_cfg`);
@@ -1447,18 +1447,13 @@
     setupUserTile(3);
 
     document.getElementById('adminThemesBtn').onclick = () => {
-      const newUrl = prompt('Введіть посилання на нову картинку для теми 1:');
+      const newUrl = prompt('Введіть посилання на нову картинку для теми 2:');
       if (newUrl) {
-        document.querySelector('#presetThemeGrid .theme-card').setAttribute('data-url', newUrl);
-        document.querySelector('#presetThemeGrid .theme-card img').src = newUrl;
-        localStorage.setItem('admin_custom_theme_1', newUrl);
+        document.querySelectorAll('#presetThemeGrid .theme-card')[1].setAttribute('data-url', newUrl);
+        document.querySelectorAll('#presetThemeGrid .theme-card img')[0].src = newUrl;
+        localStorage.setItem('admin_custom_theme_2', newUrl);
       }
     };
-    if (localStorage.getItem('admin_custom_theme_1')) {
-      const url = localStorage.getItem('admin_custom_theme_1');
-      document.querySelector('#presetThemeGrid .theme-card').setAttribute('data-url', url);
-      document.querySelector('#presetThemeGrid .theme-card img').src = url;
-    }
 
     resetBgBtn.onclick = async () => {
       await clearMediaBlob('saved_media_file');
@@ -1559,7 +1554,6 @@
       }
     }
 
-    // Рендеринг таймлайну без "ВКЛ" та "ВИКЛ"
     function renderScheduleList() {
       const listEl = document.getElementById('slotsList');
       const now = new Date();
@@ -1597,7 +1591,7 @@
               <circle cx="12" cy="12" r="5"/>
               <line x1="12" y1="1" x2="12" y2="4" stroke="#2ed573" stroke-width="2"/>
               <line x1="12" y1="20" x2="12" y2="23" stroke="#2ed573" stroke-width="2"/>
-              <line x1="12" y1="1" x2="12" y2="4" stroke="#2ed573" stroke-width="2"/>
+              <line x1="1" y1="12" x2="4" y2="12" stroke="#2ed573" stroke-width="2"/>
               <line x1="20" y1="12" x2="23" y2="12" stroke="#2ed573" stroke-width="2"/>
             </svg>
           `;
