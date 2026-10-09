@@ -29,73 +29,63 @@ async function fetchScheduleData(regionSlug, targetQueue, day = 'today') {
   const $ = cheerio.load(response.data);
   let slots = [];
 
-  // 1. Проверяем данные Next.js
-  const nextDataScript = $('#__NEXT_DATA__').html();
-  if (nextDataScript) {
-    try {
-      const nextData = JSON.parse(nextDataScript);
-      const pageProps = nextData.props?.pageProps || {};
-      
-      // Ищем массив очередей в свойствах страницы
-      const queuesData = pageProps.schedules || pageProps.data || pageProps.regionData?.queues || [];
-      
-      // Ищем нужный день и очередь
-      const queueObj = Array.isArray(queuesData) 
-        ? queuesData.find(q => (q.name || q.queue || '').includes(targetQueue))
-        : null;
+  // Шукаємо заголовок саме потрібної черги
+  let targetCard = null;
 
-      if (queueObj && queueObj.intervals) {
-        slots = queueObj.intervals.map(i => ({
-          start: i.start,
-          end: i.end === '24:00' ? '23:59' : i.end,
-          status: i.type === 'outage' || i.isOff || i.status === 'off' ? 'off' : 'on'
-        }));
+  $('*').each((_, el) => {
+    if (targetCard) return; // вже знайшли
+
+    const text = $(el).text().trim();
+    // Шукаємо точний збіг назви черги (Черга 3.2 або 3.2)
+    if (text === `Черга ${targetQueue}` || text === `Черга: ${targetQueue}`) {
+      // Піднімаємося вгору крок за кроком, доки не знайдемо блок картки,
+      // але зупиняємося ДО того, як батько захопить інші черги (наприклад, "Черга 1.1")
+      let current = $(el).parent();
+      while (current.length && current[0].tagName !== 'body') {
+        const parentText = current.parent().text() || '';
+        // Якщо батьківський елемент вже містить інші черги — значить поточний `current` і є карткою нашої черги!
+        const queueMatches = parentText.match(/Черга\s+\d/g) || [];
+        if (queueMatches.length > 1) {
+          targetCard = current;
+          break;
+        }
+        current = current.parent();
       }
-    } catch (e) {
-      console.warn('Next.js parse error, fallback to HTML parser');
+      if (!targetCard) targetCard = current;
     }
-  }
+  });
 
-  // 2. Резервный HTML-парсер (если структура поменялась)
-  if (slots.length === 0) {
-    // Ищем карточку с чергой
-    $('*').each((_, el) => {
-      const text = $(el).text().trim();
-      if (text === `Черга ${targetQueue}` || text === `Черга: ${targetQueue}`) {
-        const card = $(el).closest('div[class*="rounded"], div[class*="border"], div[class*="card"]');
-        if (card.length) {
-          card.find('div, tr, li').each((__, row) => {
-            const rowText = $(row).text().trim();
-            const match = rowText.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
-            if (match && (rowText.match(/(\d{1,2}:\d{2})/g) || []).length === 2) {
-              const start = match[1];
-              let end = match[2];
-              if (end === '24:00') end = '23:59';
+  if (targetCard && targetCard.length) {
+    // Шукаємо інтервали тільки всередині знайденої ізольованої картки
+    targetCard.find('div, li, tr').each((_, row) => {
+      const rowText = $(row).text().trim();
+      const match = rowText.match(/^(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})$/);
+      
+      // Переконуємось, що це чистий рядок часу без вкладених інших годин
+      if (match && (rowText.match(/(\d{1,2}:\d{2})/g) || []).length === 2) {
+        const start = match[1];
+        let end = match[2];
+        if (end === '24:00') end = '23:59';
 
-              const html = $(row).html().toLowerCase();
-              const isOff = html.includes('rgb(254') || 
-                            html.includes('rgb(255') || 
-                            html.includes('rose') || 
-                            html.includes('danger') || 
-                            html.includes('polygon') || 
-                            html.includes('bolt') ||
-                            html.includes('m13');
+        const html = $(row).html().toLowerCase();
+        
+        // Ознаки відключення (блискавка, червоний колір, рожевий бейдж)
+        const isOff = html.includes('rgb(254') || 
+                      html.includes('rgb(255') || 
+                      html.includes('rose') || 
+                      html.includes('danger') || 
+                      html.includes('polygon') || 
+                      html.includes('bolt') ||
+                      html.includes('m13');
 
-              if (!slots.some(s => s.start === start && s.end === end)) {
-                slots.push({ start, end, status: isOff ? 'off' : 'on' });
-              }
-            }
-          });
+        if (!slots.some(s => s.start === start && s.end === end)) {
+          slots.push({ start, end, status: isOff ? 'off' : 'on' });
         }
       }
     });
   }
 
-  // Если запрашивали завтра, а на сайте пока нет графика на завтра
-  if (day === 'tomorrow' && slots.length === 0) {
-    slots = [];
-  }
-
+  // Сортуємо розклад за часом
   slots.sort((a, b) => a.start.localeCompare(b.start));
 
   const result = {
