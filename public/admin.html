@@ -3,38 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LightNet — Адмін-панель</title>
+  <title>LightNet — Візуальна адмін-панель</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: #090a0f;
       color: #f1f2f6;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      padding: 30px 20px;
+      padding: 24px;
       display: flex;
       justify-content: center;
+      min-height: 100vh;
     }
-    .admin-container {
+
+    .admin-wrapper {
       width: 100%;
-      max-width: 950px;
+      max-width: 1300px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Екран входу */
+    .login-box {
       background: #141722;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-    }
-    h1 { font-size: 1.4rem; margin-bottom: 20px; color: #fff; }
-    
-    /* Екран входу */
-    .login-box {
+      padding: 30px;
+      width: 100%;
+      max-width: 380px;
+      margin: 100px auto;
+      text-align: center;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      max-width: 360px;
-      margin: 40px auto;
-      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     }
-    
+
     input, select {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -45,7 +50,7 @@
       outline: none;
     }
     input:focus, select:focus { border-color: #2ed573; }
-    
+
     .btn {
       background: #2ed573;
       border: none;
@@ -57,76 +62,184 @@
       transition: opacity 0.2s;
     }
     .btn:hover { opacity: 0.9; }
-    
-    .btn-del {
-      background: rgba(255, 71, 87, 0.2);
-      border: 1px solid rgba(255, 71, 87, 0.4);
-      color: #ff4757;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .btn-del:hover { background: rgba(255, 71, 87, 0.35); }
-    
-    .btn-add {
-      background: rgba(46, 213, 115, 0.15);
-      border: 1px solid rgba(46, 213, 115, 0.3);
-      color: #2ed573;
-      margin-top: 14px;
-      cursor: pointer;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-    }
-    .btn-add:hover { background: rgba(46, 213, 115, 0.25); }
 
-    .preset-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 14px;
+    /* Головна розмітка адмінки: 2 колонки */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 980px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .card-panel {
+      background: #141722;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .preset-row {
+
+    /* Верхня панель списку пресетів */
+    .preset-tabs {
       display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-    }
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      font-size: 0.8rem;
-      color: #8391a5;
-    }
-    .color-input {
-      width: 44px;
-      height: 34px;
-      padding: 0;
-      cursor: pointer;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .toggle-wrap {
-      display: flex;
-      align-items: center;
       gap: 8px;
-      height: 34px;
+      overflow-x: auto;
+      padding-bottom: 6px;
     }
-    .toggle-wrap input[type="checkbox"] {
+    .preset-tab-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      padding: 7px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .preset-tab-btn.active {
+      background: #2ed573;
+      color: #090a0f;
+      border-color: #2ed573;
+    }
+
+    .ctrl-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ctrl-row label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
       width: 18px;
       height: 18px;
-      accent-color: #2ed573;
+      border-radius: 50%;
+      background: #2ed573;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
       cursor: pointer;
     }
+
+    .color-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .color-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+    }
+    input[type=color] {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* Монітор попереднього перегляду (Preview) */
+    .preview-container {
+      position: sticky;
+      top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .monitor-screen {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 15px 45px rgba(0,0,0,0.7);
+    }
+
+    .preview-bg-media {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .preview-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(9, 10, 15, 0.6);
+      transition: background 0.1s;
+    }
+
+    .preview-stage {
+      position: absolute;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .preview-caption {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .preview-timer {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+
+    .preview-hint {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      opacity: 0.8;
+    }
+
     .status-msg {
-      margin-top: 15px;
-      font-size: 0.9rem;
+      margin-top: 10px;
+      font-size: 0.88rem;
       font-weight: 600;
     }
     .status-msg.ok { color: #2ed573; }
@@ -135,40 +248,181 @@
 </head>
 <body>
 
-<div class="admin-container">
-  <h1>Панель керування темами LightNet</h1>
+<div class="admin-wrapper">
 
-  <!-- Екран авторизації (показується якщо не увійшли) -->
+  <!-- Екран авторизації -->
   <div id="loginSection" class="login-box">
-    <p style="color: #a4b0be; font-size: 0.9rem;">Введіть секретний пароль адміністратора</p>
+    <h2 style="font-size: 1.25rem;">Вхід в адмін-панель</h2>
+    <p style="color: #8391a5; font-size: 0.85rem;">Введіть захисний пароль із середовища Render</p>
     <input type="password" id="adminPassInput" placeholder="Пароль адміністратора" />
     <button class="btn" id="loginBtn">Увійти</button>
     <div class="status-msg err" id="loginError"></div>
   </div>
 
-  <!-- Робоча зона адмінки (прихована до успішного входу) -->
-  <div id="contentSection" style="display: none;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08);">
-      <span style="color: #2ed573; font-weight: 600; font-size: 0.9rem;">● Авторизовано</span>
+  <!-- Робочий інтерфейс з живим прев'ю -->
+  <div id="contentSection" style="display: none; flex-direction: column; gap: 18px;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="font-size: 1.3rem;">Налаштування глобальних тем (Live Preview)</h2>
       <button class="btn" id="saveAllBtn">Зберегти всі зміни для всіх</button>
     </div>
 
-    <div id="presetsList"></div>
+    <!-- Вкладки пресетів -->
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <div class="preset-tabs" id="presetTabsContainer"></div>
+      <button class="btn" id="addPresetBtn" style="background: rgba(46, 213, 115, 0.15); color: #2ed573; border: 1px solid rgba(46, 213, 115, 0.3); font-size: 0.85rem; padding: 6px 12px;">+ Новий</button>
+      <button id="delCurrentBtn" style="background: rgba(255, 71, 87, 0.15); color: #ff4757; border: 1px solid rgba(255, 71, 87, 0.3); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem;">Видалити тему</button>
+    </div>
 
-    <button class="btn-add" id="addPresetBtn">+ Додати новий пресет</button>
+    <div class="main-grid">
+      <!-- Ліва колонка: Інтерактивні контролери -->
+      <div class="card-panel">
+        
+        <div class="ctrl-row">
+          <label>Назва теми</label>
+          <input type="text" id="inpName" />
+        </div>
 
-    <div class="status-msg" id="statusMsg"></div>
+        <div class="ctrl-row">
+          <label>URL відео/фото (/totoro.mp4, /emerald-rain.mp4 або URL)</label>
+          <input type="text" id="inpUrl" />
+        </div>
+
+        <div class="ctrl-row">
+          <label>Тип медіа</label>
+          <select id="inpType">
+            <option value="video">video</option>
+            <option value="image">image</option>
+          </select>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 4px 0;" />
+
+        <!-- Позиція по вертикалі -->
+        <div class="ctrl-row">
+          <label>Позиція по вертикалі <span id="lblPos">50%</span></label>
+          <div class="range-wrap">
+            <input type="range" id="rangePos" min="20" max="88" value="50" />
+          </div>
+        </div>
+
+        <!-- Розмір таймера -->
+        <div class="ctrl-row">
+          <label>Розмір таймера <span id="lblScale">100%</span></label>
+          <div class="range-wrap">
+            <input type="range" id="rangeScale" min="50" max="160" value="100" />
+          </div>
+        </div>
+
+        <!-- Затемнення фону -->
+        <div class="ctrl-row">
+          <label>Затемнення фону <span id="lblDim">55%</span></label>
+          <div class="range-wrap">
+            <input type="range" id="rangeDim" min="0" max="95" value="55" />
+          </div>
+        </div>
+
+        <!-- Радіус світіння -->
+        <div class="ctrl-row">
+          <label>Радіус підсвітки (світіння) <span id="lblGlow">25px</span></label>
+          <div class="range-wrap">
+            <input type="range" id="rangeGlow" min="0" max="60" value="25" />
+          </div>
+        </div>
+
+        <!-- Світіння тумблер -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
+          <span style="font-size: 0.88rem; color: #cbd5e1; font-weight: 500;">Підсвітка таймера</span>
+          <input type="checkbox" id="chkGlow" style="width: 20px; height: 20px; accent-color: #2ed573; cursor: pointer;" />
+        </div>
+
+        <!-- Кольори -->
+        <div class="ctrl-row">
+          <label>Колірна палітра</label>
+          <div class="color-row">
+            <div class="color-box">
+              <span>Текст</span>
+              <input type="color" id="colText" />
+            </div>
+            <div class="color-box">
+              <span>Світло є</span>
+              <input type="color" id="colGreen" />
+            </div>
+            <div class="color-box">
+              <span>Відключення</span>
+              <input type="color" id="colRed" />
+            </div>
+          </div>
+        </div>
+
+        <div class="status-msg" id="statusMsg"></div>
+      </div>
+
+      <!-- Права колонка: Живий попередній перегляд (Preview) -->
+      <div class="preview-container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">ЖИВИЙ ПЕРЕГЛЯД (16:9)</span>
+          <div style="display: flex; gap: 8px;">
+            <button id="previewModeGreen" style="background: rgba(46, 213, 115, 0.2); color:#2ed573; border: 1px solid rgba(46,213,115,0.4); border-radius:6px; padding:4px 8px; font-size:0.75rem; cursor:pointer;">Режим "Світло є"</button>
+            <button id="previewModeRed" style="background: rgba(255, 71, 87, 0.2); color:#ff4757; border: 1px solid rgba(255,71,87,0.4); border-radius:6px; padding:4px 8px; font-size:0.75rem; cursor:pointer;">Режим "Відключення"</button>
+          </div>
+        </div>
+
+        <div class="monitor-screen">
+          <!-- Фонове відео або фото -->
+          <img id="prevImg" class="preview-bg-media" style="display:none;" />
+          <video id="prevVideo" class="preview-bg-media" autoplay loop muted playsinline style="display:none;"></video>
+          <div id="prevOverlay" class="preview-overlay"></div>
+
+          <!-- Макет таймера -->
+          <div id="prevStage" class="preview-stage">
+            <div id="prevCaption" class="preview-caption">ДО ВІДКЛЮЧЕННЯ СВІТЛА</div>
+            <div id="prevTimer" class="preview-timer">01:38:10</div>
+            <div id="prevHint" class="preview-hint">Період без світла: 22:30 — 23:59</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
   let presets = [];
   let currentPassword = '';
+  let activeIndex = 0;
+  let previewState = 'red'; // 'red' або 'green'
 
   const loginSection = document.getElementById('loginSection');
   const contentSection = document.getElementById('contentSection');
   const loginError = document.getElementById('loginError');
 
+  // Елементи форми
+  const inpName = document.getElementById('inpName');
+  const inpUrl = document.getElementById('inpUrl');
+  const inpType = document.getElementById('inpType');
+  const rangePos = document.getElementById('rangePos');
+  const lblPos = document.getElementById('lblPos');
+  const rangeScale = document.getElementById('rangeScale');
+  const lblScale = document.getElementById('lblScale');
+  const rangeDim = document.getElementById('rangeDim');
+  const lblDim = document.getElementById('lblDim');
+  const rangeGlow = document.getElementById('rangeGlow');
+  const lblGlow = document.getElementById('lblGlow');
+  const chkGlow = document.getElementById('chkGlow');
+  const colText = document.getElementById('colText');
+  const colGreen = document.getElementById('colGreen');
+  const colRed = document.getElementById('colRed');
+
+  // Елементи Preview
+  const prevImg = document.getElementById('prevImg');
+  const prevVideo = document.getElementById('prevVideo');
+  const prevOverlay = document.getElementById('prevOverlay');
+  const prevStage = document.getElementById('prevStage');
+  const prevCaption = document.getElementById('prevCaption');
+  const prevTimer = document.getElementById('prevTimer');
+  const prevHint = document.getElementById('prevHint');
+
+  // Авторизація
   document.getElementById('loginBtn').onclick = async () => {
     const pwd = document.getElementById('adminPassInput').value.trim();
     if (!pwd) return;
@@ -184,113 +438,205 @@
         currentPassword = pwd;
         presets = data.presets || [];
         loginSection.style.display = 'none';
-        contentSection.style.display = 'block';
-        renderList();
+        contentSection.style.display = 'flex';
+        renderTabs();
+        selectPreset(0);
       } else {
         loginError.textContent = data.error || 'Невірний пароль';
       }
     } catch (e) {
-      loginError.textContent = 'Помилка підключення до сервера';
+      loginError.textContent = 'Помилка з’єднання із сервером';
     }
   };
 
-  function renderList() {
-    const container = document.getElementById('presetsList');
+  function renderTabs() {
+    const container = document.getElementById('presetTabsContainer');
     container.innerHTML = presets.map((p, idx) => `
-      <div class="preset-card">
-        <!-- Рядок 1: Назва, URL, Тип, Видалити -->
-        <div class="preset-row">
-          <div class="field-group" style="flex: 2; min-width: 180px;">
-            <label>Назва пресету</label>
-            <input type="text" value="${p.name || ''}" onchange="updateVal(${idx}, 'name', this.value)" />
-          </div>
-          <div class="field-group" style="flex: 3; min-width: 240px;">
-            <label>URL відео/фото (напр. /totoro.mp4 або https://...)</label>
-            <input type="text" value="${p.url || ''}" onchange="updateVal(${idx}, 'url', this.value)" />
-          </div>
-          <div class="field-group" style="flex: 1; min-width: 100px;">
-            <label>Тип медіа</label>
-            <select onchange="updateVal(${idx}, 'type', this.value)">
-              <option value="video" ${p.type === 'video' ? 'selected' : ''}>video</option>
-              <option value="image" ${p.type === 'image' ? 'selected' : ''}>image</option>
-            </select>
-          </div>
-          <button class="btn-del" onclick="deletePreset(${idx})">Видалити</button>
-        </div>
-
-        <!-- Рядок 2: Кольори -->
-        <div class="preset-row">
-          <div class="field-group">
-            <label>Текст</label>
-            <input type="color" class="color-input" value="${p.textColor || '#a4b0be'}" onchange="updateVal(${idx}, 'textColor', this.value)" />
-          </div>
-          <div class="field-group">
-            <label>Світло є</label>
-            <input type="color" class="color-input" value="${p.greenColor || '#2ed573'}" onchange="updateVal(${idx}, 'greenColor', this.value)" />
-          </div>
-          <div class="field-group">
-            <label>Відключення</label>
-            <input type="color" class="color-input" value="${p.redColor || '#ff4757'}" onchange="updateVal(${idx}, 'redColor', this.value)" />
-          </div>
-
-          <!-- Рядок 3: Всі повзунки з сайту -->
-          <div class="field-group" style="width: 110px;">
-            <label>Позиція (%)</label>
-            <input type="number" min="20" max="88" value="${p.pos ?? 50}" onchange="updateVal(${idx}, 'pos', Number(this.value))" />
-          </div>
-          <div class="field-group" style="width: 110px;">
-            <label>Розмір (%)</label>
-            <input type="number" min="50" max="160" value="${p.scale ?? 100}" onchange="updateVal(${idx}, 'scale', Number(this.value))" />
-          </div>
-          <div class="field-group" style="width: 110px;">
-            <label>Затемнення (%)</label>
-            <input type="number" min="0" max="95" value="${p.dim ?? 55}" onchange="updateVal(${idx}, 'dim', Number(this.value))" />
-          </div>
-          <div class="field-group" style="width: 110px;">
-            <label>Радіус світіння</label>
-            <input type="number" min="0" max="60" value="${p.glowRadius ?? 25}" onchange="updateVal(${idx}, 'glowRadius', Number(this.value))" />
-          </div>
-          <div class="field-group">
-            <label>Світіння</label>
-            <div class="toggle-wrap">
-              <input type="checkbox" ${p.glowEnabled !== false ? 'checked' : ''} onchange="updateVal(${idx}, 'glowEnabled', this.checked)" />
-              <span style="font-size:0.8rem; color:#cbd5e1;">Вкл</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <button class="preset-tab-btn ${idx === activeIndex ? 'active' : ''}" onclick="selectPreset(${idx})">
+        ${p.name || 'Тема ' + (idx + 1)}
+      </button>
     `).join('');
   }
 
-  window.updateVal = (idx, key, val) => {
-    presets[idx][key] = val;
-  };
+  function selectPreset(idx) {
+    if (idx < 0 || idx >= presets.length) return;
+    activeIndex = idx;
+    renderTabs();
 
-  window.deletePreset = (idx) => {
-    if (confirm('Видалити цей пресет?')) {
-      presets.splice(idx, 1);
-      renderList();
+    const p = presets[idx];
+    inpName.value = p.name || '';
+    inpUrl.value = p.url || '';
+    inpType.value = p.type || 'video';
+
+    rangePos.value = p.pos ?? 50;
+    lblPos.textContent = rangePos.value + '%';
+
+    rangeScale.value = p.scale ?? 100;
+    lblScale.textContent = rangeScale.value + '%';
+
+    rangeDim.value = p.dim ?? 55;
+    lblDim.textContent = rangeDim.value + '%';
+
+    rangeGlow.value = p.glowRadius ?? 25;
+    lblGlow.textContent = rangeGlow.value + 'px';
+
+    chkGlow.checked = p.glowEnabled !== false;
+
+    colText.value = p.textColor || '#a4b0be';
+    colGreen.value = p.greenColor || '#2ed573';
+    colRed.value = p.redColor || '#ff4757';
+
+    updatePreview();
+  }
+
+  // Оновлення Preview в реальному часі
+  function updatePreview() {
+    const p = presets[activeIndex];
+    if (!p) return;
+
+    // Фон
+    if (p.type === 'video') {
+      prevImg.style.display = 'none';
+      if (prevVideo.src !== location.origin + p.url && prevVideo.src !== p.url) {
+        prevVideo.src = p.url;
+      }
+      prevVideo.style.display = 'block';
+    } else {
+      prevVideo.style.display = 'none';
+      prevImg.src = p.url;
+      prevImg.style.display = 'block';
     }
+
+    // Затемнення
+    prevOverlay.style.background = `rgba(9, 10, 15, ${p.dim / 100})`;
+
+    // Позиція по вертикалі
+    prevStage.style.top = `${p.pos}%`;
+
+    // Розмір шрифту
+    const scaleFactor = p.scale / 100;
+    prevTimer.style.fontSize = `${2.8 * scaleFactor}rem`;
+    prevCaption.style.fontSize = `${0.75 * scaleFactor}rem`;
+    prevHint.style.fontSize = `${0.72 * scaleFactor}rem`;
+
+    // Кольори
+    prevCaption.style.color = p.textColor;
+    prevHint.style.color = p.textColor;
+
+    const activeColor = previewState === 'green' ? p.greenColor : p.redColor;
+    prevTimer.style.color = activeColor;
+
+    // Світіння
+    if (p.glowEnabled) {
+      prevTimer.style.filter = `drop-shadow(0 0 ${p.glowRadius * 0.7}px ${activeColor})`;
+    } else {
+      prevTimer.style.filter = 'none';
+    }
+  }
+
+  // Прив'язка подій до повзунків (Live input)
+  rangePos.oninput = () => {
+    presets[activeIndex].pos = Number(rangePos.value);
+    lblPos.textContent = rangePos.value + '%';
+    updatePreview();
   };
 
+  rangeScale.oninput = () => {
+    presets[activeIndex].scale = Number(rangeScale.value);
+    lblScale.textContent = rangeScale.value + '%';
+    updatePreview();
+  };
+
+  rangeDim.oninput = () => {
+    presets[activeIndex].dim = Number(rangeDim.value);
+    lblDim.textContent = rangeDim.value + '%';
+    updatePreview();
+  };
+
+  rangeGlow.oninput = () => {
+    presets[activeIndex].glowRadius = Number(rangeGlow.value);
+    lblGlow.textContent = rangeGlow.value + 'px';
+    updatePreview();
+  };
+
+  chkGlow.onchange = () => {
+    presets[activeIndex].glowEnabled = chkGlow.checked;
+    updatePreview();
+  };
+
+  colText.oninput = () => {
+    presets[activeIndex].textColor = colText.value;
+    updatePreview();
+  };
+  colGreen.oninput = () => {
+    presets[activeIndex].greenColor = colGreen.value;
+    updatePreview();
+  };
+  colRed.oninput = () => {
+    presets[activeIndex].redColor = colRed.value;
+    updatePreview();
+  };
+
+  inpName.oninput = () => {
+    presets[activeIndex].name = inpName.value;
+    renderTabs();
+  };
+
+  inpUrl.onchange = () => {
+    presets[activeIndex].url = inpUrl.value;
+    updatePreview();
+  };
+
+  inpType.onchange = () => {
+    presets[activeIndex].type = inpType.value;
+    updatePreview();
+  };
+
+  // Перемикання станів попереднього перегляду (Зелений / Червоний)
+  document.getElementById('previewModeGreen').onclick = () => {
+    previewState = 'green';
+    prevCaption.textContent = 'ДО УВІМКНЕННЯ СВІТЛА';
+    updatePreview();
+  };
+  document.getElementById('previewModeRed').onclick = () => {
+    previewState = 'red';
+    prevCaption.textContent = 'ДО ВІДКЛЮЧЕННЯ СВІТЛА';
+    updatePreview();
+  };
+
+  // Додавання нової теми
   document.getElementById('addPresetBtn').onclick = () => {
     presets.push({
-      name: 'Новий пресет',
+      name: 'Нова тема',
       url: '/totoro.mp4',
       type: 'video',
-      textColor: '#ffffff',
+      textColor: '#a4b0be',
       greenColor: '#2ed573',
       redColor: '#ff4757',
-      dim: 50,
+      dim: 55,
       pos: 50,
       scale: 100,
       glowEnabled: true,
       glowRadius: 25
     });
-    renderList();
+    selectPreset(presets.length - 1);
   };
 
+  // Видалення активної теми
+  document.getElementById('delCurrentBtn').onclick = () => {
+    if (presets.length <= 1) {
+      alert('Потрібно залишити щонайменше одну тему!');
+      return;
+    }
+    if (confirm(`Видалити тему "${presets[activeIndex].name}"?`)) {
+      presets.splice(activeIndex, 1);
+      selectPreset(Math.max(0, activeIndex - 1));
+    }
+  };
+
+  // Збереження
   document.getElementById('saveAllBtn').onclick = async () => {
+    const statusMsg = document.getElementById('statusMsg');
     try {
       const res = await fetch('/api/admin/presets', {
         method: 'POST',
@@ -299,21 +645,18 @@
       });
       const data = await res.json();
       if (res.ok) {
-        showStatus('Всі налаштування успішно збережено для всіх користувачів сайту!', true);
+        statusMsg.textContent = 'Всі налаштування успішно збережено для всіх користувачів!';
+        statusMsg.className = 'status-msg ok';
       } else {
-        showStatus(data.error || 'Помилка збереження', false);
+        statusMsg.textContent = data.error || 'Помилка збереження';
+        statusMsg.className = 'status-msg err';
       }
     } catch (e) {
-      showStatus('Помилка з’єднання із сервером', false);
+      statusMsg.textContent = 'Помилка підключення до сервера';
+      statusMsg.className = 'status-msg err';
     }
+    setTimeout(() => { statusMsg.textContent = ''; }, 4000);
   };
-
-  function showStatus(text, ok) {
-    const el = document.getElementById('statusMsg');
-    el.textContent = text;
-    el.className = 'status-msg ' + (ok ? 'ok' : 'err');
-    setTimeout(() => { el.textContent = ''; }, 4000);
-  }
 </script>
 </body>
 </html>
