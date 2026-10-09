@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Монітор світла</title>
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card-bg: rgba(18, 20, 29, 0.96);
+      --border: rgba(255, 255, 255, 0.08);
+      --text-main: #f1f2f6;
+      --text-muted: #8391a5;
+      --red: #ff4757;
+      --green: #2ed573;
+      --timer-scale: 1;
+      --glow-radius: 25px;
+      --vertical-pos: 50%;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      position: relative;
+      user-select: none;
+    }
+
+    /* Фоновий блок з апаратним прискоренням */
+    .bg-media-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      transform: translateZ(0);
+      will-change: transform;
+    }
+
+    .bg-media-container img,
+    .bg-media-container video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .bg-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(9, 10, 15, 0.65);
+      z-index: 1;
+      pointer-events: none;
+      transform: translateZ(0);
+    }
+
+    /* Верхня панель (hover) */
+    .top-drawer-container {
+      position: absolute;
+      top: 0;
+      left: 28px;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(calc(-100% + 22px));
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .top-drawer-container:hover {
+      transform: translateY(0);
+    }
+
+    .controls-meta {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 14px 18px;
+      border-radius: 0 0 12px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(14px);
+    }
+
+    .top-drawer-handle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      width: fit-content;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .top-drawer-container:hover .top-drawer-handle {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .custom-select {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: #ced6e0;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .custom-select:hover, .custom-select:focus {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .custom-select option {
+      background: #141722;
+      color: #fff;
+    }
+
+    /* Нижня панель кастомізації (hover) */
+    .bottom-bg-drawer {
+      position: absolute;
+      bottom: 0;
+      right: 28px;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      transform: translateY(calc(100% - 22px));
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .bottom-bg-drawer:hover {
+      transform: translateY(0);
+    }
+
+    .bottom-drawer-handle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .bottom-bg-drawer:hover .bottom-drawer-handle {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .bg-controls-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      padding: 16px 20px;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(14px);
+      min-width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .bg-panel-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.83rem;
+      color: #ced6e0;
+    }
+
+    .bg-panel-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 3px 0;
+    }
+
+    .color-picker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type=color] {
+      -webkit-appearance: none;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      background: none;
+    }
+
+    input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type=color]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+    }
+
+    input[type=checkbox] {
+      accent-color: #2ed573;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .btn-file-wrap {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+
+    .btn-action {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .btn-file-wrap input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    input[type=range] {
+      accent-color: #2ed573;
+      cursor: pointer;
+    }
+
+    /* Кнопка повного екрана */
+    .fullscreen-btn {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      z-index: 25;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: #ced6e0;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      backdrop-filter: blur(8px);
+    }
+
+    .fullscreen-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* Головний блок таймера */
+    .main-stage {
+      position: absolute;
+      top: var(--vertical-pos);
+      left: 50%;
+      transform: translate(-50%, -50%) translateZ(0);
+      will-change: top, transform;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .status-caption {
+      font-size: calc(1.15rem * var(--timer-scale));
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: var(--text-muted);
+    }
+
+    .main-timer {
+      font-size: calc(clamp(4.5rem, 10vw, 9.5rem) * var(--timer-scale));
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 4px;
+      line-height: 1;
+      color: var(--red);
+      filter: drop-shadow(0 0 var(--glow-radius) var(--red));
+    }
+
+    .main-timer.online {
+      color: var(--green);
+      filter: drop-shadow(0 0 var(--glow-radius) var(--green));
+    }
+
+    .main-timer.no-glow {
+      filter: none !important;
+    }
+
+    .main-timer.empty {
+      color: #ffa502;
+      filter: drop-shadow(0 0 var(--glow-radius) rgba(255, 165, 2, 0.4));
+      font-size: calc(clamp(2.5rem, 5.5vw, 5rem) * var(--timer-scale));
+      letter-spacing: 2px;
+    }
+
+    .next-slot-hint {
+      margin-top: 20px;
+      font-size: calc(1.15rem * var(--timer-scale));
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+    }
+
+    /* Права висувна панель */
+    .drawer-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      z-index: 30;
+      display: flex;
+      transform: translateX(calc(100% - 24px));
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .drawer-container:hover {
+      transform: translateX(0);
+    }
+
+    .drawer-handle {
+      width: 24px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+
+    .drawer-handle span {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      letter-spacing: 3px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      opacity: 0.6;
+      transition: opacity 0.2s, color 0.2s;
+    }
+
+    .drawer-container:hover .drawer-handle span {
+      opacity: 1;
+      color: #ced6e0;
+    }
+
+    .schedule-panel {
+      width: 320px;
+      height: 100%;
+      background: var(--card-bg);
+      border-left: 1px solid var(--border);
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(14px);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+
+    .tabs-wrap {
+      display: flex;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .hours-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      flex: 1;
+      padding-right: 4px;
+      transition: opacity 0.2s;
+    }
+
+    .hours-strip.loading {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .hours-strip::-webkit-scrollbar { width: 4px; }
+    .hours-strip::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+    }
+
+    .slot-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      font-size: 0.95rem;
+    }
+
+    .slot-row.current {
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .slot-time {
+      font-weight: 600;
+      color: #e2e8f0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 28px;
+      border-radius: 8px;
+    }
+
+    .icon-badge.off {
+      background: rgba(255, 71, 87, 0.14);
+      color: var(--red);
+      border: 1px solid rgba(255, 71, 87, 0.28);
+    }
+
+    .icon-badge.on {
+      background: rgba(46, 213, 115, 0.14);
+      color: var(--green);
+      border: 1px solid rgba(46, 213, 115, 0.28);
+    }
+
+    /* Футер зліва знизу */
+    .bottom-meta {
+      position: absolute;
+      bottom: 24px;
+      left: 28px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .dot-live {
+      width: 7px;
+      height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green);
+      transition: background 0.3s;
+    }
+
+    .dot-live.syncing {
+      background: #ffa502;
+      box-shadow: 0 0 8px #ffa502;
+      animation: pulse 1s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* Кнопка ручного оновлення біля тексту */
+    .refresh-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: #ced6e0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      line-height: 1;
+      padding: 0;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    .refresh-btn.spinning svg {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .source-link {
+      color: var(--text-muted);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .source-link:hover {
+      color: #48dbfb;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Фон -->
+  <div class="bg-media-container">
+    <img id="bgImage" alt="Фонове зображення" />
+    <video id="bgVideo" autoplay loop muted playsinline></video>
+  </div>
+  <div class="bg-overlay" id="bgOverlay"></div>
+
+  <!-- Верхня панель черги -->
+  <div class="top-drawer-container">
+    <div class="controls-meta">
+      <select id="regionSelect" class="custom-select">
+        <option value="poltavska-oblast">Полтавська обл.</option>
+        <option value="kyivska-oblast">Київська обл.</option>
+        <option value="m-kyiv">м. Київ</option>
+        <option value="lvivska-oblast">Львівська обл.</option>
+        <option value="dnipropetrovska-oblast">Дніпропетровська обл.</option>
+        <option value="odeska-oblast">Одеська обл.</option>
+        <option value="kharkivska-oblast">Харківська обл.</option>
+        <option value="vinnytska-oblast">Вінницька обл.</option>
+        <option value="cherkaska-oblast">Черкаська обл.</option>
+        <option value="sumska-oblast">Сумська обл.</option>
+        <option value="chernihivska-oblast">Чернігівська обл.</option>
+      </select>
+
+      <select id="queueSelect" class="custom-select">
+        <option value="1.1">Черга 1.1</option>
+        <option value="1.2">Черга 1.2</option>
+        <option value="2.1">Черга 2.1</option>
+        <option value="2.2">Черга 2.2</option>
+        <option value="3.1">Черга 3.1</option>
+        <option value="3.2" selected>Черга 3.2</option>
+        <option value="4.1">Черга 4.1</option>
+        <option value="4.2">Черга 4.2</option>
+        <option value="5.1">Черга 5.1</option>
+        <option value="5.2">Черга 5.2</option>
+        <option value="6.1">Черга 6.1</option>
+        <option value="6.2">Черга 6.2</option>
+      </select>
+    </div>
+    <div class="top-drawer-handle">
+      <span>Налаштування черги ▼</span>
+    </div>
+  </div>
+
+  <!-- Нижня панель: Фон, стилі, позиція таймера -->
+  <div class="bottom-bg-drawer">
+    <div class="bottom-drawer-handle">
+      <span>ФОН ТА СТИЛЬ ▲</span>
+    </div>
+    <div class="bg-controls-panel">
+      <!-- Медіа -->
+      <div class="bg-panel-row">
+        <span>Зображення / Відео:</span>
+        <div class="btn-file-wrap">
+          <button class="btn-action">Обрати файл</button>
+          <input type="file" id="bgFileInput" accept="image/*,video/*" />
+        </div>
+      </div>
+      <div class="bg-panel-row">
+        <span>Затемнення фону:</span>
+        <input type="range" id="dimRange" min="0" max="95" value="65" />
+      </div>
+
+      <div class="bg-panel-divider"></div>
+
+      <!-- Позиція по вертикалі -->
+      <div class="bg-panel-row">
+        <span>Позиція по вертикалі:</span>
+        <input type="range" id="posRange" min="20" max="88" value="50" />
+      </div>
+
+      <!-- Розмір шрифту -->
+      <div class="bg-panel-row">
+        <span>Розмір таймера:</span>
+        <input type="range" id="sizeRange" min="50" max="160" value="100" />
+      </div>
+
+      <!-- Підсвітка та радіус -->
+      <div class="bg-panel-row">
+        <span>Підсвітка (світіння):</span>
+        <input type="checkbox" id="glowCheckbox" checked />
+      </div>
+      <div class="bg-panel-row" id="glowRadiusRow">
+        <span>Радіус підсвітки:</span>
+        <input type="range" id="glowRadiusRange" min="0" max="60" value="25" />
+      </div>
+
+      <div class="bg-panel-divider"></div>
+
+      <!-- Кольори -->
+      <div class="bg-panel-row">
+        <span>Колір підписів:</span>
+        <div class="color-picker-wrap">
+          <input type="color" id="textColorPicker" value="#a4b0be" />
+        </div>
+      </div>
+      <div class="bg-panel-row">
+        <span>Колір «Світло є»:</span>
+        <div class="color-picker-wrap">
+          <input type="color" id="greenColorPicker" value="#2ed573" />
+        </div>
+      </div>
+      <div class="bg-panel-row">
+        <span>Колір «Відключення»:</span>
+        <div class="color-picker-wrap">
+          <input type="color" id="redColorPicker" value="#ff4757" />
+        </div>
+      </div>
+
+      <div class="bg-panel-divider"></div>
+
+      <!-- Скидання -->
+      <div class="bg-panel-row" style="justify-content: flex-end;">
+        <button class="btn-action" id="resetBgBtn" style="color: #ff4757;">Скинути все</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Кнопка повного екрана -->
+  <button id="fullscreenBtn" class="fullscreen-btn" title="На повний екран">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+    </svg>
+    <span id="fsText">Повний екран</span>
+  </button>
+
+  <!-- Центрований блок таймера -->
+  <main class="main-stage">
+    <div class="status-caption" id="caption">Завантаження...</div>
+    <div class="main-timer" id="timer">--:--:--</div>
+    <div class="next-slot-hint" id="hint">Отримання графіка</div>
+  </main>
+
+  <!-- Права панель графіка -->
+  <div class="drawer-container">
+    <div class="drawer-handle">
+      <span>ГРАФІК</span>
+    </div>
+    <aside class="schedule-panel">
+      <div class="tabs-wrap">
+        <button class="tab-btn active" id="tabToday">Сьогодні</button>
+        <button class="tab-btn" id="tabTomorrow">Завтра</button>
+      </div>
+      <div class="hours-strip" id="slotsList"></div>
+    </aside>
+  </div>
+
+  <!-- Підвал з кнопкою оновлення -->
+  <div class="bottom-meta">
+    <span class="dot-live" id="dotLive"></span>
+    <span id="updateStatusText">Оновлено: --:--</span>
+    <button class="refresh-btn" id="manualRefreshBtn" title="Оновити графік зараз">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 4v6h-6"/>
+        <path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
+    <span>•</span>
+    <a id="externalSourceLink" class="source-link" href="https://bezsvitla.com.ua/poltavska-oblast" target="_blank" rel="noopener noreferrer">bezsvitla.com.ua</a>
+  </div>
+
+  <script>
+    let currentDay = 'today';
+    let schedule = [];
+    let currentAbortController = null;
+
+    const ICON_OFF = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    `;
+
+    const ICON_ON = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18h6"/>
+        <path d="M10 22h4"/>
+        <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"/>
+        <line x1="12" y1="2" x2="12" y2="0"/>
+        <line x1="4.93" y1="4.93" x2="3.51" y2="3.51"/>
+        <line x1="19.07" y1="4.93" x2="20.49" y2="3.51"/>
+      </svg>
+    `;
+
+    const regionSelect = document.getElementById('regionSelect');
+    const queueSelect = document.getElementById('queueSelect');
+    const tabToday = document.getElementById('tabToday');
+    const tabTomorrow = document.getElementById('tabTomorrow');
+    const sourceLink = document.getElementById('externalSourceLink');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const fsText = document.getElementById('fsText');
+    const dotLive = document.getElementById('dotLive');
+    const manualRefreshBtn = document.getElementById('manualRefreshBtn');
+
+    const bgFileInput = document.getElementById('bgFileInput');
+    const resetBgBtn = document.getElementById('resetBgBtn');
+    const dimRange = document.getElementById('dimRange');
+    const posRange = document.getElementById('posRange');
+    const sizeRange = document.getElementById('sizeRange');
+    const glowCheckbox = document.getElementById('glowCheckbox');
+    const glowRadiusRange = document.getElementById('glowRadiusRange');
+    const glowRadiusRow = document.getElementById('glowRadiusRow');
+    const textColorPicker = document.getElementById('textColorPicker');
+    const greenColorPicker = document.getElementById('greenColorPicker');
+    const redColorPicker = document.getElementById('redColorPicker');
+    const bgImage = document.getElementById('bgImage');
+    const bgVideo = document.getElementById('bgVideo');
+    const bgOverlay = document.getElementById('bgOverlay');
+    const timerEl = document.getElementById('timer');
+    const slotsList = document.getElementById('slotsList');
+
+    // ==========================================
+    // ЗБЕРЕЖЕННЯ МЕДІА (IndexedDB)
+    // ==========================================
+    function getDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('PowerMonitorDB', 1);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('mediaStore')) {
+            db.createObjectStore('mediaStore', { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function saveMediaToDB(blob, type) {
+      try {
+        const db = await getDB();
+        const tx = db.transaction('mediaStore', 'readwrite');
+        tx.objectStore('mediaStore').put({ id: 'bg_media', data: blob, type: type });
+      } catch (err) {
+        console.error('IndexedDB save error:', err);
+      }
+    }
+
+    async function loadMediaFromDB() {
+      try {
+        const db = await getDB();
+        const tx = db.transaction('mediaStore', 'readonly');
+        const req = tx.objectStore('mediaStore').get('bg_media');
+        req.onsuccess = () => {
+          if (req.result && req.result.data) {
+            const blobUrl = URL.createObjectURL(req.result.data);
+            applyMediaBackground(blobUrl, req.result.type);
+          }
+        };
+      } catch (err) {
+        console.error('IndexedDB load error:', err);
+      }
+    }
+
+    async function clearMediaFromDB() {
+      try {
+        const db = await getDB();
+        const tx = db.transaction('mediaStore', 'readwrite');
+        tx.objectStore('mediaStore').delete('bg_media');
+      } catch (err) {
+        console.error('IndexedDB clear error:', err);
+      }
+    }
+
+    function applyMediaBackground(src, type) {
+      if (type === 'video') {
+        bgImage.style.display = 'none';
+        bgVideo.src = src;
+        bgVideo.style.display = 'block';
+        bgVideo.play().catch(() => {});
+      } else {
+        bgVideo.style.display = 'none';
+        bgVideo.pause();
+        bgImage.src = src;
+        bgImage.style.display = 'block';
+      }
+    }
+
+    bgFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const type = file.type.startsWith('video') ? 'video' : 'image';
+      await saveMediaToDB(file, type);
+
+      const blobUrl = URL.createObjectURL(file);
+      applyMediaBackground(blobUrl, type);
+    });
+
+    // ==========================================
+    // ЗАТЕМНЕННЯ ТА СТИЛІ
+    // ==========================================
+    function applyDimming(val) {
+      bgOverlay.style.backgroundColor = `rgba(9, 10, 15, ${val / 100})`;
+    }
+
+    dimRange.addEventListener('input', (e) => {
+      const val = e.target.value;
+      applyDimming(val);
+      localStorage.setItem('bg_dim', val);
+    });
+
+    function applyStyles() {
+      const scale = (localStorage.getItem('ui_scale') || 100) / 100;
+      const verticalPos = localStorage.getItem('ui_vertical_pos') || 50;
+      const textColor = localStorage.getItem('ui_text_color') || '#a4b0be';
+      const greenColor = localStorage.getItem('ui_green_color') || '#2ed573';
+      const redColor = localStorage.getItem('ui_red_color') || '#ff4757';
+      const glowEnabled = localStorage.getItem('ui_glow_enabled') !== 'false';
+      const glowRadius = localStorage.getItem('ui_glow_radius') || 25;
+      const dimVal = localStorage.getItem('bg_dim') !== null ? localStorage.getItem('bg_dim') : 65;
+
+      document.documentElement.style.setProperty('--timer-scale', scale);
+      document.documentElement.style.setProperty('--vertical-pos', `${verticalPos}%`);
+      document.documentElement.style.setProperty('--text-muted', textColor);
+      document.documentElement.style.setProperty('--green', greenColor);
+      document.documentElement.style.setProperty('--red', redColor);
+      document.documentElement.style.setProperty('--glow-radius', `${glowRadius}px`);
+
+      dimRange.value = dimVal;
+      applyDimming(dimVal);
+
+      sizeRange.value = scale * 100;
+      posRange.value = verticalPos;
+      textColorPicker.value = textColor;
+      greenColorPicker.value = greenColor;
+      redColorPicker.value = redColor;
+      glowCheckbox.checked = glowEnabled;
+      glowRadiusRange.value = glowRadius;
+
+      if (!glowEnabled) {
+        timerEl.classList.add('no-glow');
+        glowRadiusRow.style.opacity = '0.4';
+        glowRadiusRange.disabled = true;
+      } else {
+        timerEl.classList.remove('no-glow');
+        glowRadiusRow.style.opacity = '1';
+        glowRadiusRange.disabled = false;
+      }
+    }
+
+    posRange.addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.documentElement.style.setProperty('--vertical-pos', `${val}%`);
+      localStorage.setItem('ui_vertical_pos', val);
+    });
+
+    sizeRange.addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.documentElement.style.setProperty('--timer-scale', val / 100);
+      localStorage.setItem('ui_scale', val);
+    });
+
+    glowCheckbox.addEventListener('change', (e) => {
+      const enabled = e.target.checked;
+      localStorage.setItem('ui_glow_enabled', enabled);
+      if (!enabled) {
+        timerEl.classList.add('no-glow');
+        glowRadiusRow.style.opacity = '0.4';
+        glowRadiusRange.disabled = true;
+      } else {
+        timerEl.classList.remove('no-glow');
+        glowRadiusRow.style.opacity = '1';
+        glowRadiusRange.disabled = false;
+      }
+    });
+
+    glowRadiusRange.addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.documentElement.style.setProperty('--glow-radius', `${val}px`);
+      localStorage.setItem('ui_glow_radius', val);
+    });
+
+    textColorPicker.addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.documentElement.style.setProperty('--text-muted', val);
+      localStorage.setItem('ui_text_color', val);
+    });
+
+    greenColorPicker.addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.documentElement.style.setProperty('--green', val);
+      localStorage.setItem('ui_green_color', val);
+    });
+
+    redColorPicker.addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.documentElement.style.setProperty('--red', val);
+      localStorage.setItem('ui_red_color', val);
+    });
+
+    resetBgBtn.addEventListener('click', async () => {
+      bgImage.style.display = 'none';
+      bgImage.src = '';
+      bgVideo.style.display = 'none';
+      bgVideo.pause();
+      bgVideo.src = '';
+
+      await clearMediaFromDB();
+
+      localStorage.removeItem('bg_dim');
+      localStorage.removeItem('ui_scale');
+      localStorage.removeItem('ui_vertical_pos');
+      localStorage.removeItem('ui_glow_enabled');
+      localStorage.removeItem('ui_glow_radius');
+      localStorage.removeItem('ui_text_color');
+      localStorage.removeItem('ui_green_color');
+      localStorage.removeItem('ui_red_color');
+
+      applyStyles();
+    });
+
+    applyStyles();
+    loadMediaFromDB();
+
+    // Селектори
+    if (localStorage.getItem('saved_region')) regionSelect.value = localStorage.getItem('saved_region');
+    if (localStorage.getItem('saved_queue')) queueSelect.value = localStorage.getItem('saved_queue');
+
+    function updateSourceLink() {
+      sourceLink.href = `https://bezsvitla.com.ua/${regionSelect.value}`;
+    }
+    updateSourceLink();
+
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      fsText.textContent = document.fullscreenElement ? 'Згорнути' : 'Повний екран';
+    });
+
+    tabToday.addEventListener('click', () => {
+      if (currentDay === 'today') return;
+      currentDay = 'today';
+      tabToday.classList.add('active');
+      tabTomorrow.classList.remove('active');
+      loadSchedule();
+    });
+
+    tabTomorrow.addEventListener('click', () => {
+      if (currentDay === 'tomorrow') return;
+      currentDay = 'tomorrow';
+      tabTomorrow.classList.add('active');
+      tabToday.classList.remove('active');
+      loadSchedule();
+    });
+
+    regionSelect.addEventListener('change', () => {
+      localStorage.setItem('saved_region', regionSelect.value);
+      updateSourceLink();
+      loadSchedule(true);
+    });
+
+    queueSelect.addEventListener('change', () => {
+      localStorage.setItem('saved_queue', queueSelect.value);
+      loadSchedule(true);
+    });
+
+    // Ручне оновлення кнопкою
+    manualRefreshBtn.addEventListener('click', () => {
+      loadSchedule(true);
+    });
+
+    function timeToMinutes(str) {
+      const [h, m] = str.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    // Завантаження розкладу (force = true ігнорує серверний кеш)
+    async function loadSchedule(force = false) {
+      if (currentAbortController) {
+        currentAbortController.abort();
+      }
+      currentAbortController = new AbortController();
+
+      dotLive.className = 'dot-live syncing';
+      manualRefreshBtn.classList.add('spinning');
+      slotsList.classList.add('loading');
+
+      const region = regionSelect.value;
+      const queue = queueSelect.value;
+      
+      try {
+        const forceParam = force ? '&force=true' : '';
+        const res = await fetch(`/api/status?region=${region}&queue=${queue}&day=${currentDay}${forceParam}`, {
+          signal: currentAbortController.signal
+        });
+        const data = await res.json();
+        
+        schedule = data.slots || [];
+
+        if (data.lastUpdated) {
+          const t = new Date(data.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          document.getElementById('updateStatusText').textContent = `Оновлено: ${t}`;
+        }
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          document.getElementById('updateStatusText').textContent = 'Помилка оновлення';
+        }
+      } finally {
+        dotLive.className = 'dot-live';
+        manualRefreshBtn.classList.remove('spinning');
+        slotsList.classList.remove('loading');
+        renderScheduleList();
+        tick();
+      }
+    }
+
+    function renderScheduleList() {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      if (schedule.length === 0) {
+        const msg = currentDay === 'tomorrow' 
+          ? 'Графік на завтра ще не оприлюднено обленерго' 
+          : 'Графік відсутній або оновлюється на сайті';
+        
+        slotsList.innerHTML = `
+          <div style="color: #ffa502; font-size: 0.85rem; padding: 25px 12px; text-align: center; line-height: 1.4; border: 1px dashed rgba(255, 165, 2, 0.3); border-radius: 8px;">
+            ${msg}
+          </div>
+        `;
+        return;
+      }
+
+      slotsList.innerHTML = schedule.map(slot => {
+        const sMin = timeToMinutes(slot.start);
+        const eMin = timeToMinutes(slot.end);
+        const isCurrent = (currentDay === 'today') && (currentMinutes >= sMin && currentMinutes < eMin);
+        const isOff = slot.status === 'off';
+
+        return `
+          <div class="slot-row ${isCurrent ? 'current' : ''}">
+            <span class="slot-time">${slot.start} — ${slot.end}</span>
+            <span class="icon-badge ${isOff ? 'off' : 'on'}" title="${isOff ? 'Відключення' : 'Світло є'}">
+              ${isOff ? ICON_OFF : ICON_ON}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function tick() {
+      const captionEl = document.getElementById('caption');
+      const hintEl = document.getElementById('hint');
+      const glowEnabled = localStorage.getItem('ui_glow_enabled') !== 'false';
+      const noGlowClass = glowEnabled ? '' : ' no-glow';
+
+      if (currentDay === 'tomorrow') {
+        captionEl.textContent = `ПЛАН НА ЗАВТРА • ЧЕРГА ${queueSelect.value}`;
+        
+        if (!schedule || schedule.length === 0) {
+          timerEl.className = 'main-timer empty' + noGlowClass;
+          timerEl.textContent = 'НЕМАЄ ДАНИХ';
+          hintEl.textContent = 'Обленерго ще не опублікувало графік на завтра';
+        } else {
+          const offSlots = schedule.filter(s => s.status === 'off');
+          timerEl.className = 'main-timer online' + noGlowClass;
+          timerEl.textContent = `${offSlots.length} ВІДКЛЮЧЕНЬ`;
+          hintEl.textContent = offSlots.length > 0 
+            ? `Перше вимкнення завтра о ${offSlots[0].start}` 
+            : 'Відключень на завтра не заплановано';
+        }
+        return;
+      }
+
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const currentSeconds = now.getSeconds();
+
+      const offSlots = schedule.filter(s => s.status === 'off');
+
+      if (!schedule || schedule.length === 0) {
+        captionEl.textContent = `ЧЕРГА ${queueSelect.value}`;
+        timerEl.className = 'main-timer empty' + noGlowClass;
+        timerEl.textContent = 'ГРАФІК ВІДСУТНІЙ';
+        hintEl.textContent = 'Дані відсутні або оновлюються';
+        return;
+      }
+
+      if (offSlots.length === 0) {
+        captionEl.textContent = "Світло є";
+        captionEl.style.color = "var(--green)";
+        timerEl.textContent = "--:--:--";
+        timerEl.className = 'main-timer online' + noGlowClass;
+        hintEl.textContent = "Відключень на сьогодні не заплановано";
+        return;
+      }
+
+      const currentOutage = offSlots.find(slot => {
+        const s = timeToMinutes(slot.start);
+        const e = timeToMinutes(slot.end);
+        return currentMinutes >= s && currentMinutes < e;
+      });
+
+      if (currentOutage) {
+        captionEl.textContent = "До увімкнення світла";
+        captionEl.style.color = "var(--green)";
+        timerEl.className = 'main-timer online' + noGlowClass;
+
+        const endMin = timeToMinutes(currentOutage.end);
+        const diffSec = (endMin - currentMinutes) * 60 - currentSeconds;
+        timerEl.textContent = formatTime(diffSec);
+        hintEl.textContent = `Поточне відключення: ${currentOutage.start} — ${currentOutage.end}`;
+      } else {
+        const upcoming = offSlots.find(slot => timeToMinutes(slot.start) > currentMinutes);
+
+        if (upcoming) {
+          captionEl.textContent = "До відключення світла";
+          captionEl.style.color = "var(--red)";
+          timerEl.className = 'main-timer' + noGlowClass;
+
+          const startMin = timeToMinutes(upcoming.start);
+          const diffSec = (startMin - currentMinutes) * 60 - currentSeconds;
+          timerEl.textContent = formatTime(diffSec);
+          hintEl.textContent = `Період без світла: ${upcoming.start} — ${upcoming.end}`;
+        } else {
+          captionEl.textContent = "Світло є";
+          captionEl.style.color = "var(--green)";
+          timerEl.textContent = "ДО РАНКУ";
+          timerEl.className = 'main-timer online' + noGlowClass;
+          hintEl.textContent = "Відключень до кінця доби більше немає";
+        }
+      }
+    }
+
+    function formatTime(totalSec) {
+      if (totalSec <= 0) return "00:00:00";
+      const h = Math.floor(totalSec / 3600).toString().padStart(2, '0');
+      const m = Math.floor((totalSec % 3600) / 60).toString().padStart(2, '0');
+      const s = (totalSec % 60).toString().padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    // Перший запуск
+    loadSchedule();
+
+    // Автооновлення 1 раз на годину (60 хв * 60 сек * 1000 мс)
+    setInterval(() => loadSchedule(false), 60 * 60 * 1000);
+
+    // Відлік таймера щосекунди
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
