@@ -11,9 +11,10 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const PRESETS_FILE = path.join(__dirname, 'presets.json');
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
-// Початкові дефолтні пресети (створюються автоматично, якщо файлу ще немає)
+// Пароль береться ВИКЛЮЧНО зі змінної середовища Render
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
 const DEFAULT_PRESETS = [
   {
     id: 'totoro',
@@ -24,7 +25,10 @@ const DEFAULT_PRESETS = [
     greenColor: '#48dbfb',
     redColor: '#ff4757',
     dim: 55,
-    pos: 72
+    pos: 72,
+    scale: 100,
+    glowEnabled: true,
+    glowRadius: 25
   },
   {
     id: 'emerald',
@@ -35,7 +39,10 @@ const DEFAULT_PRESETS = [
     greenColor: '#38ef7d',
     redColor: '#55d6aa',
     dim: 45,
-    pos: 50
+    pos: 50,
+    scale: 100,
+    glowEnabled: true,
+    glowRadius: 25
   },
   {
     id: 'minimal',
@@ -46,7 +53,10 @@ const DEFAULT_PRESETS = [
     greenColor: '#2ed573',
     redColor: '#ff4757',
     dim: 65,
-    pos: 50
+    pos: 50,
+    scale: 100,
+    glowEnabled: true,
+    glowRadius: 25
   }
 ];
 
@@ -59,7 +69,6 @@ function getPresets() {
     const data = fs.readFileSync(PRESETS_FILE, 'utf-8');
     return JSON.parse(data);
   } catch (e) {
-    console.error('Error reading presets:', e.message);
     return DEFAULT_PRESETS;
   }
 }
@@ -68,34 +77,46 @@ function savePresets(presets) {
   fs.writeFileSync(PRESETS_FILE, JSON.stringify(presets, null, 2), 'utf-8');
 }
 
-// 1. Публічний API отримання пресетів для клієнтів
+// Публічний список для клієнтів
 app.get('/api/presets', (req, res) => {
   res.json(getPresets());
 });
 
-// 2. Маршрут до адмінки
+// Сторінка адмінки
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// 3. API збереження пресетів (з перевіркою пароля)
+// Перевірка пароля
+app.post('/api/admin/auth', (req, res) => {
+  const { password } = req.body;
+  if (!ADMIN_PASSWORD) {
+    return res.status(500).json({ error: 'Змінна ADMIN_PASSWORD не налаштована в Render' });
+  }
+  if (password === ADMIN_PASSWORD) {
+    return res.json({ success: true, presets: getPresets() });
+  }
+  return res.status(401).json({ error: 'Невірний пароль' });
+});
+
+// Збереження списку пресетів
 app.post('/api/admin/presets', (req, res) => {
   const { password, presets } = req.body;
-  if (password !== ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'Невірний пароль адміністратора' });
+  if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Доступ заборонено' });
   }
   if (!Array.isArray(presets)) {
-    return res.status(400).json({ error: 'Некоректний формат списку' });
+    return res.status(400).json({ error: 'Некоректний формат' });
   }
   try {
     savePresets(presets);
-    res.json({ success: true, presets });
+    res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Помилка запису файлу пресетів' });
+    res.status(500).json({ error: 'Помилка збереження файлу' });
   }
 });
 
-// --- Парсинг bezsvitla.com.ua ---
+// --- Парсинг grafika ---
 const cache = new Map();
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -185,7 +206,6 @@ app.get('/api/status', async (req, res) => {
     const data = await fetchScheduleData(region, queue, day);
     res.json(data);
   } catch (err) {
-    console.error('Fetch error:', err.message);
     res.status(500).json({ error: 'Помилка отримання даних', slots: [] });
   }
 });

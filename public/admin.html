@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LightNet — Адмін-панель пресетів</title>
+  <title>LightNet — Адмін-панель</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -16,7 +16,7 @@
     }
     .admin-container {
       width: 100%;
-      max-width: 850px;
+      max-width: 950px;
       background: #141722;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 16px;
@@ -24,13 +24,17 @@
       box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     }
     h1 { font-size: 1.4rem; margin-bottom: 20px; color: #fff; }
-    .auth-block {
+    
+    /* Екран входу */
+    .login-box {
       display: flex;
-      gap: 10px;
-      margin-bottom: 24px;
-      padding-bottom: 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-direction: column;
+      gap: 14px;
+      max-width: 360px;
+      margin: 40px auto;
+      text-align: center;
     }
+    
     input, select {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -41,17 +45,19 @@
       outline: none;
     }
     input:focus, select:focus { border-color: #2ed573; }
+    
     .btn {
       background: #2ed573;
       border: none;
       color: #090a0f;
       font-weight: 700;
-      padding: 8px 16px;
+      padding: 9px 18px;
       border-radius: 8px;
       cursor: pointer;
       transition: opacity 0.2s;
     }
     .btn:hover { opacity: 0.9; }
+    
     .btn-del {
       background: rgba(255, 71, 87, 0.2);
       border: 1px solid rgba(255, 71, 87, 0.4);
@@ -59,16 +65,22 @@
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
+      font-weight: 600;
     }
+    .btn-del:hover { background: rgba(255, 71, 87, 0.35); }
+    
     .btn-add {
       background: rgba(46, 213, 115, 0.15);
       border: 1px solid rgba(46, 213, 115, 0.3);
       color: #2ed573;
-      margin-top: 10px;
+      margin-top: 14px;
       cursor: pointer;
-      padding: 9px 14px;
+      padding: 10px 16px;
       border-radius: 8px;
+      font-weight: 600;
     }
+    .btn-add:hover { background: rgba(46, 213, 115, 0.25); }
+
     .preset-card {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -88,16 +100,29 @@
     .field-group {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 5px;
       font-size: 0.8rem;
       color: #8391a5;
     }
     .color-input {
-      width: 40px;
+      width: 44px;
       height: 34px;
       padding: 0;
       cursor: pointer;
       border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 34px;
+    }
+    .toggle-wrap input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #2ed573;
+      cursor: pointer;
     }
     .status-msg {
       margin-top: 15px;
@@ -111,48 +136,80 @@
 <body>
 
 <div class="admin-container">
-  <h1>Управління загальними пресетами LightNet</h1>
+  <h1>Панель керування темами LightNet</h1>
 
-  <div class="auth-block">
-    <input type="password" id="adminPass" placeholder="Пароль адміністратора (admin123)" style="flex:1;" />
-    <button class="btn" id="saveAllBtn">Зберегти для всіх</button>
+  <!-- Екран авторизації (показується якщо не увійшли) -->
+  <div id="loginSection" class="login-box">
+    <p style="color: #a4b0be; font-size: 0.9rem;">Введіть секретний пароль адміністратора</p>
+    <input type="password" id="adminPassInput" placeholder="Пароль адміністратора" />
+    <button class="btn" id="loginBtn">Увійти</button>
+    <div class="status-msg err" id="loginError"></div>
   </div>
 
-  <div id="presetsList"></div>
+  <!-- Робоча зона адмінки (прихована до успішного входу) -->
+  <div id="contentSection" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+      <span style="color: #2ed573; font-weight: 600; font-size: 0.9rem;">● Авторизовано</span>
+      <button class="btn" id="saveAllBtn">Зберегти всі зміни для всіх</button>
+    </div>
 
-  <button class="btn-add" id="addPresetBtn">+ Додати новий пресет</button>
+    <div id="presetsList"></div>
 
-  <div class="status-msg" id="statusMsg"></div>
+    <button class="btn-add" id="addPresetBtn">+ Додати новий пресет</button>
+
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
 </div>
 
 <script>
   let presets = [];
+  let currentPassword = '';
 
-  async function loadPresets() {
+  const loginSection = document.getElementById('loginSection');
+  const contentSection = document.getElementById('contentSection');
+  const loginError = document.getElementById('loginError');
+
+  document.getElementById('loginBtn').onclick = async () => {
+    const pwd = document.getElementById('adminPassInput').value.trim();
+    if (!pwd) return;
+
     try {
-      const res = await fetch('/api/presets');
-      presets = await res.json();
-      renderList();
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        currentPassword = pwd;
+        presets = data.presets || [];
+        loginSection.style.display = 'none';
+        contentSection.style.display = 'block';
+        renderList();
+      } else {
+        loginError.textContent = data.error || 'Невірний пароль';
+      }
     } catch (e) {
-      showStatus('Не вдалося завантажити пресети', false);
+      loginError.textContent = 'Помилка підключення до сервера';
     }
-  }
+  };
 
   function renderList() {
     const container = document.getElementById('presetsList');
     container.innerHTML = presets.map((p, idx) => `
       <div class="preset-card">
+        <!-- Рядок 1: Назва, URL, Тип, Видалити -->
         <div class="preset-row">
-          <div class="field-group" style="flex: 2;">
+          <div class="field-group" style="flex: 2; min-width: 180px;">
             <label>Назва пресету</label>
             <input type="text" value="${p.name || ''}" onchange="updateVal(${idx}, 'name', this.value)" />
           </div>
-          <div class="field-group" style="flex: 3;">
-            <label>URL (напр. /totoro.mp4 або https://...)</label>
+          <div class="field-group" style="flex: 3; min-width: 240px;">
+            <label>URL відео/фото (напр. /totoro.mp4 або https://...)</label>
             <input type="text" value="${p.url || ''}" onchange="updateVal(${idx}, 'url', this.value)" />
           </div>
-          <div class="field-group" style="flex: 1;">
-            <label>Тип</label>
+          <div class="field-group" style="flex: 1; min-width: 100px;">
+            <label>Тип медіа</label>
             <select onchange="updateVal(${idx}, 'type', this.value)">
               <option value="video" ${p.type === 'video' ? 'selected' : ''}>video</option>
               <option value="image" ${p.type === 'image' ? 'selected' : ''}>image</option>
@@ -161,6 +218,7 @@
           <button class="btn-del" onclick="deletePreset(${idx})">Видалити</button>
         </div>
 
+        <!-- Рядок 2: Кольори -->
         <div class="preset-row">
           <div class="field-group">
             <label>Текст</label>
@@ -174,13 +232,30 @@
             <label>Відключення</label>
             <input type="color" class="color-input" value="${p.redColor || '#ff4757'}" onchange="updateVal(${idx}, 'redColor', this.value)" />
           </div>
-          <div class="field-group" style="width: 100px;">
-            <label>Затемнення (%)</label>
-            <input type="number" min="0" max="95" value="${p.dim || 55}" onchange="updateVal(${idx}, 'dim', Number(this.value))" />
-          </div>
-          <div class="field-group" style="width: 100px;">
+
+          <!-- Рядок 3: Всі повзунки з сайту -->
+          <div class="field-group" style="width: 110px;">
             <label>Позиція (%)</label>
-            <input type="number" min="20" max="88" value="${p.pos || 50}" onchange="updateVal(${idx}, 'pos', Number(this.value))" />
+            <input type="number" min="20" max="88" value="${p.pos ?? 50}" onchange="updateVal(${idx}, 'pos', Number(this.value))" />
+          </div>
+          <div class="field-group" style="width: 110px;">
+            <label>Розмір (%)</label>
+            <input type="number" min="50" max="160" value="${p.scale ?? 100}" onchange="updateVal(${idx}, 'scale', Number(this.value))" />
+          </div>
+          <div class="field-group" style="width: 110px;">
+            <label>Затемнення (%)</label>
+            <input type="number" min="0" max="95" value="${p.dim ?? 55}" onchange="updateVal(${idx}, 'dim', Number(this.value))" />
+          </div>
+          <div class="field-group" style="width: 110px;">
+            <label>Радіус світіння</label>
+            <input type="number" min="0" max="60" value="${p.glowRadius ?? 25}" onchange="updateVal(${idx}, 'glowRadius', Number(this.value))" />
+          </div>
+          <div class="field-group">
+            <label>Світіння</label>
+            <div class="toggle-wrap">
+              <input type="checkbox" ${p.glowEnabled !== false ? 'checked' : ''} onchange="updateVal(${idx}, 'glowEnabled', this.checked)" />
+              <span style="font-size:0.8rem; color:#cbd5e1;">Вкл</span>
+            </div>
           </div>
         </div>
       </div>
@@ -207,27 +282,24 @@
       greenColor: '#2ed573',
       redColor: '#ff4757',
       dim: 50,
-      pos: 50
+      pos: 50,
+      scale: 100,
+      glowEnabled: true,
+      glowRadius: 25
     });
     renderList();
   };
 
   document.getElementById('saveAllBtn').onclick = async () => {
-    const password = document.getElementById('adminPass').value;
-    if (!password) {
-      alert('Введіть пароль адміністратора');
-      return;
-    }
-
     try {
       const res = await fetch('/api/admin/presets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, presets })
+        body: JSON.stringify({ password: currentPassword, presets })
       });
       const data = await res.json();
       if (res.ok) {
-        showStatus('Пресетні теми успішно збережено для всіх користувачів!', true);
+        showStatus('Всі налаштування успішно збережено для всіх користувачів сайту!', true);
       } else {
         showStatus(data.error || 'Помилка збереження', false);
       }
@@ -240,9 +312,8 @@
     const el = document.getElementById('statusMsg');
     el.textContent = text;
     el.className = 'status-msg ' + (ok ? 'ok' : 'err');
+    setTimeout(() => { el.textContent = ''; }, 4000);
   }
-
-  loadPresets();
 </script>
 </body>
 </html>

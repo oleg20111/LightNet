@@ -1366,7 +1366,7 @@
     }
 
 // Динамічне завантаження спільних пресетів із сервера
-    async function loadGlobalPresets() {
+async function loadGlobalPresets() {
       const grid = document.getElementById('presetThemeGrid');
       if (!grid) return;
 
@@ -1386,8 +1386,11 @@
                  data-text-color="${item.textColor || '#a4b0be'}"
                  data-green-color="${item.greenColor || '#2ed573'}"
                  data-red-color="${item.redColor || '#ff4757'}"
-                 data-dim="${item.dim || 55}"
-                 data-pos="${item.pos || 50}"
+                 data-dim="${item.dim ?? 55}"
+                 data-pos="${item.pos ?? 50}"
+                 data-scale="${item.scale ?? 100}"
+                 data-glow-enabled="${item.glowEnabled !== false}"
+                 data-glow-radius="${item.glowRadius ?? 25}"
                  title="${item.name}">
               ${mediaHtml}
               <span>${item.name}</span>
@@ -1395,7 +1398,6 @@
           `;
         }).join('');
 
-        // Додаємо подію кліку на кожну згенеровану картку
         grid.querySelectorAll('.theme-card').forEach(card => {
           card.onclick = () => {
             const url = card.getAttribute('data-url');
@@ -1406,6 +1408,9 @@
             const redColor = card.getAttribute('data-red-color');
             const dim = card.getAttribute('data-dim');
             const pos = card.getAttribute('data-pos');
+            const scale = card.getAttribute('data-scale');
+            const glowEnabled = card.getAttribute('data-glow-enabled') === 'true';
+            const glowRadius = card.getAttribute('data-glow-radius');
 
             if (textColor) localStorage.setItem('ui_text_color', textColor);
             if (greenColor) localStorage.setItem('ui_green_color', greenColor);
@@ -1418,6 +1423,16 @@
             if (pos) {
               localStorage.setItem('ui_vertical_pos', pos);
               posRange.value = pos;
+            }
+            if (scale) {
+              localStorage.setItem('ui_scale', scale);
+              sizeRange.value = scale;
+            }
+            localStorage.setItem('ui_glow_enabled', glowEnabled);
+            glowCheckbox.checked = glowEnabled;
+            if (glowRadius) {
+              localStorage.setItem('ui_glow_radius', glowRadius);
+              glowRadiusRange.value = glowRadius;
             }
 
             applyStyles();
