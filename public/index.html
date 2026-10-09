@@ -31,7 +31,6 @@
       user-select: none;
     }
 
-    /* Фоновий блок з апаратним прискоренням */
     .bg-media-container {
       position: absolute;
       top: 0;
@@ -41,8 +40,6 @@
       z-index: 0;
       overflow: hidden;
       pointer-events: none;
-      transform: translateZ(0);
-      will-change: transform;
     }
 
     .bg-media-container img,
@@ -62,7 +59,7 @@
       background: rgba(9, 10, 15, 0.65);
       z-index: 1;
       pointer-events: none;
-      transform: translateZ(0);
+      transition: background 0.3s;
     }
 
     /* Верхня панель (hover) */
@@ -74,7 +71,7 @@
       display: flex;
       flex-direction: column;
       transform: translateY(calc(-100% + 22px));
-      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .top-drawer-container:hover {
@@ -136,12 +133,17 @@
       border-color: rgba(255, 255, 255, 0.25);
     }
 
+    .custom-select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .custom-select option {
       background: #141722;
       color: #fff;
     }
 
-    /* Нижня панель кастомізації (hover) */
+    /* Нижня панель (Фон та стиль) */
     .bottom-bg-drawer {
       position: absolute;
       bottom: 0;
@@ -151,7 +153,7 @@
       flex-direction: column;
       align-items: flex-end;
       transform: translateY(calc(100% - 22px));
-      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .bottom-bg-drawer:hover {
@@ -303,13 +305,12 @@
       color: #fff;
     }
 
-    /* Головний блок таймера */
+    /* Центральний таймер */
     .main-stage {
       position: absolute;
       top: var(--vertical-pos);
       left: 50%;
-      transform: translate(-50%, -50%) translateZ(0);
-      will-change: top, transform;
+      transform: translate(-50%, -50%);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -318,6 +319,7 @@
       width: 100%;
       pointer-events: none;
       z-index: 10;
+      transition: top 0.15s ease-out;
     }
 
     .status-caption {
@@ -327,6 +329,7 @@
       font-weight: 600;
       margin-bottom: 14px;
       color: var(--text-muted);
+      transition: color 0.2s;
     }
 
     .main-timer {
@@ -337,6 +340,7 @@
       line-height: 1;
       color: var(--red);
       filter: drop-shadow(0 0 var(--glow-radius) var(--red));
+      transition: color 0.2s, filter 0.2s;
     }
 
     .main-timer.online {
@@ -348,6 +352,15 @@
       filter: none !important;
     }
 
+    /* Стиль пульсації при оновленні */
+    .main-timer.loading {
+      color: #38ada9;
+      filter: drop-shadow(0 0 25px rgba(56, 173, 169, 0.4));
+      font-size: calc(clamp(2.4rem, 5.5vw, 4.8rem) * var(--timer-scale));
+      letter-spacing: 3px;
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+
     .main-timer.empty {
       color: #ffa502;
       filter: drop-shadow(0 0 var(--glow-radius) rgba(255, 165, 2, 0.4));
@@ -355,11 +368,17 @@
       letter-spacing: 2px;
     }
 
+    @keyframes pulse {
+      0%, 100% { opacity: 0.35; transform: scale(0.98); }
+      50% { opacity: 1; transform: scale(1.02); }
+    }
+
     .next-slot-hint {
       margin-top: 20px;
       font-size: calc(1.15rem * var(--timer-scale));
       color: var(--text-main);
       letter-spacing: 0.5px;
+      transition: color 0.2s;
     }
 
     /* Права висувна панель */
@@ -371,7 +390,7 @@
       z-index: 30;
       display: flex;
       transform: translateX(calc(100% - 24px));
-      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .drawer-container:hover {
@@ -417,7 +436,6 @@
       flex-direction: column;
       backdrop-filter: blur(14px);
       box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
-      position: relative;
     }
 
     .tabs-wrap {
@@ -446,6 +464,11 @@
       color: #fff;
     }
 
+    .tab-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     .hours-strip {
       display: flex;
       flex-direction: column;
@@ -453,12 +476,6 @@
       overflow-y: auto;
       flex: 1;
       padding-right: 4px;
-      transition: opacity 0.2s;
-    }
-
-    .hours-strip.loading {
-      opacity: 0.4;
-      pointer-events: none;
     }
 
     .hours-strip::-webkit-scrollbar { width: 4px; }
@@ -510,6 +527,29 @@
       border: 1px solid rgba(46, 213, 115, 0.28);
     }
 
+    .loader-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 50px 10px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 255, 255, 0.08);
+      border-top-color: #38ada9;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     /* Футер зліва знизу */
     .bottom-meta {
       position: absolute;
@@ -534,44 +574,8 @@
 
     .dot-live.syncing {
       background: #ffa502;
-      box-shadow: 0 0 8px #ffa502;
-      animation: pulse 1s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 1; }
-    }
-
-    /* Кнопка ручного оновлення біля тексту */
-    .refresh-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      color: #ced6e0;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 0.85rem;
-      line-height: 1;
-      padding: 0;
-      transition: background 0.2s, color 0.2s, transform 0.2s;
-    }
-
-    .refresh-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-    }
-
-    .refresh-btn.spinning svg {
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+      box-shadow: 0 0 10px #ffa502;
+      animation: pulse 0.7s infinite ease-in-out;
     }
 
     .source-link {
@@ -633,13 +637,12 @@
     </div>
   </div>
 
-  <!-- Нижня панель: Фон, стилі, позиція таймера -->
+  <!-- Нижня панель: Фон, стилі, позиція -->
   <div class="bottom-bg-drawer">
     <div class="bottom-drawer-handle">
       <span>ФОН ТА СТИЛЬ ▲</span>
     </div>
     <div class="bg-controls-panel">
-      <!-- Медіа -->
       <div class="bg-panel-row">
         <span>Зображення / Відео:</span>
         <div class="btn-file-wrap">
@@ -654,19 +657,16 @@
 
       <div class="bg-panel-divider"></div>
 
-      <!-- Позиція по вертикалі -->
       <div class="bg-panel-row">
         <span>Позиція по вертикалі:</span>
         <input type="range" id="posRange" min="20" max="88" value="50" />
       </div>
 
-      <!-- Розмір шрифту -->
       <div class="bg-panel-row">
         <span>Розмір таймера:</span>
         <input type="range" id="sizeRange" min="50" max="160" value="100" />
       </div>
 
-      <!-- Підсвітка та радіус -->
       <div class="bg-panel-row">
         <span>Підсвітка (світіння):</span>
         <input type="checkbox" id="glowCheckbox" checked />
@@ -678,7 +678,6 @@
 
       <div class="bg-panel-divider"></div>
 
-      <!-- Кольори -->
       <div class="bg-panel-row">
         <span>Колір підписів:</span>
         <div class="color-picker-wrap">
@@ -700,7 +699,6 @@
 
       <div class="bg-panel-divider"></div>
 
-      <!-- Скидання -->
       <div class="bg-panel-row" style="justify-content: flex-end;">
         <button class="btn-action" id="resetBgBtn" style="color: #ff4757;">Скинути все</button>
       </div>
@@ -717,9 +715,9 @@
 
   <!-- Центрований блок таймера -->
   <main class="main-stage">
-    <div class="status-caption" id="caption">Завантаження...</div>
-    <div class="main-timer" id="timer">--:--:--</div>
-    <div class="next-slot-hint" id="hint">Отримання графіка</div>
+    <div class="status-caption" id="caption">ПІДКЛЮЧЕННЯ...</div>
+    <div class="main-timer loading" id="timer">ЗАВАНТАЖЕННЯ...</div>
+    <div class="next-slot-hint" id="hint">Отримуємо актуальний розклад з сервера</div>
   </main>
 
   <!-- Права панель графіка -->
@@ -736,17 +734,10 @@
     </aside>
   </div>
 
-  <!-- Підвал з кнопкою оновлення -->
+  <!-- Підвал -->
   <div class="bottom-meta">
-    <span class="dot-live" id="dotLive"></span>
-    <span id="updateStatusText">Оновлено: --:--</span>
-    <button class="refresh-btn" id="manualRefreshBtn" title="Оновити графік зараз">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M23 4v6h-6"/>
-        <path d="M1 20v-6h6"/>
-        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-      </svg>
-    </button>
+    <span class="dot-live syncing" id="dotLive"></span>
+    <span id="updateStatusText">Отримання розкладу...</span>
     <span>•</span>
     <a id="externalSourceLink" class="source-link" href="https://bezsvitla.com.ua/poltavska-oblast" target="_blank" rel="noopener noreferrer">bezsvitla.com.ua</a>
   </div>
@@ -754,7 +745,7 @@
   <script>
     let currentDay = 'today';
     let schedule = [];
-    let currentAbortController = null;
+    let isLoading = false;
 
     const ICON_OFF = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -782,7 +773,6 @@
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const fsText = document.getElementById('fsText');
     const dotLive = document.getElementById('dotLive');
-    const manualRefreshBtn = document.getElementById('manualRefreshBtn');
 
     const bgFileInput = document.getElementById('bgFileInput');
     const resetBgBtn = document.getElementById('resetBgBtn');
@@ -799,98 +789,6 @@
     const bgVideo = document.getElementById('bgVideo');
     const bgOverlay = document.getElementById('bgOverlay');
     const timerEl = document.getElementById('timer');
-    const slotsList = document.getElementById('slotsList');
-
-    // ==========================================
-    // ЗБЕРЕЖЕННЯ МЕДІА (IndexedDB)
-    // ==========================================
-    function getDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open('PowerMonitorDB', 1);
-        request.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('mediaStore')) {
-            db.createObjectStore('mediaStore', { keyPath: 'id' });
-          }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-    }
-
-    async function saveMediaToDB(blob, type) {
-      try {
-        const db = await getDB();
-        const tx = db.transaction('mediaStore', 'readwrite');
-        tx.objectStore('mediaStore').put({ id: 'bg_media', data: blob, type: type });
-      } catch (err) {
-        console.error('IndexedDB save error:', err);
-      }
-    }
-
-    async function loadMediaFromDB() {
-      try {
-        const db = await getDB();
-        const tx = db.transaction('mediaStore', 'readonly');
-        const req = tx.objectStore('mediaStore').get('bg_media');
-        req.onsuccess = () => {
-          if (req.result && req.result.data) {
-            const blobUrl = URL.createObjectURL(req.result.data);
-            applyMediaBackground(blobUrl, req.result.type);
-          }
-        };
-      } catch (err) {
-        console.error('IndexedDB load error:', err);
-      }
-    }
-
-    async function clearMediaFromDB() {
-      try {
-        const db = await getDB();
-        const tx = db.transaction('mediaStore', 'readwrite');
-        tx.objectStore('mediaStore').delete('bg_media');
-      } catch (err) {
-        console.error('IndexedDB clear error:', err);
-      }
-    }
-
-    function applyMediaBackground(src, type) {
-      if (type === 'video') {
-        bgImage.style.display = 'none';
-        bgVideo.src = src;
-        bgVideo.style.display = 'block';
-        bgVideo.play().catch(() => {});
-      } else {
-        bgVideo.style.display = 'none';
-        bgVideo.pause();
-        bgImage.src = src;
-        bgImage.style.display = 'block';
-      }
-    }
-
-    bgFileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const type = file.type.startsWith('video') ? 'video' : 'image';
-      await saveMediaToDB(file, type);
-
-      const blobUrl = URL.createObjectURL(file);
-      applyMediaBackground(blobUrl, type);
-    });
-
-    // ==========================================
-    // ЗАТЕМНЕННЯ ТА СТИЛІ
-    // ==========================================
-    function applyDimming(val) {
-      bgOverlay.style.backgroundColor = `rgba(9, 10, 15, ${val / 100})`;
-    }
-
-    dimRange.addEventListener('input', (e) => {
-      const val = e.target.value;
-      applyDimming(val);
-      localStorage.setItem('bg_dim', val);
-    });
 
     function applyStyles() {
       const scale = (localStorage.getItem('ui_scale') || 100) / 100;
@@ -900,7 +798,6 @@
       const redColor = localStorage.getItem('ui_red_color') || '#ff4757';
       const glowEnabled = localStorage.getItem('ui_glow_enabled') !== 'false';
       const glowRadius = localStorage.getItem('ui_glow_radius') || 25;
-      const dimVal = localStorage.getItem('bg_dim') !== null ? localStorage.getItem('bg_dim') : 65;
 
       document.documentElement.style.setProperty('--timer-scale', scale);
       document.documentElement.style.setProperty('--vertical-pos', `${verticalPos}%`);
@@ -908,9 +805,6 @@
       document.documentElement.style.setProperty('--green', greenColor);
       document.documentElement.style.setProperty('--red', redColor);
       document.documentElement.style.setProperty('--glow-radius', `${glowRadius}px`);
-
-      dimRange.value = dimVal;
-      applyDimming(dimVal);
 
       sizeRange.value = scale * 100;
       posRange.value = verticalPos;
@@ -981,15 +875,53 @@
       localStorage.setItem('ui_red_color', val);
     });
 
-    resetBgBtn.addEventListener('click', async () => {
+    const savedDim = localStorage.getItem('bg_dim');
+    if (savedDim) {
+      dimRange.value = savedDim;
+      bgOverlay.style.background = `rgba(9, 10, 15, ${savedDim / 100})`;
+    }
+
+    dimRange.addEventListener('input', (e) => {
+      const val = e.target.value;
+      bgOverlay.style.background = `rgba(9, 10, 15, ${val / 100})`;
+      localStorage.setItem('bg_dim', val);
+    });
+
+    const savedMedia = localStorage.getItem('bg_media_data');
+    const savedMediaType = localStorage.getItem('bg_media_type');
+    if (savedMedia && savedMediaType) {
+      applyMediaBackground(savedMedia, savedMediaType);
+    }
+
+    bgFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+        const type = file.type.startsWith('video') ? 'video' : 'image';
+        applyMediaBackground(dataUrl, type);
+
+        try {
+          localStorage.setItem('bg_media_data', dataUrl);
+          localStorage.setItem('bg_media_type', type);
+        } catch (err) {
+          console.warn('Файл завеликий для збереження');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    resetBgBtn.addEventListener('click', () => {
       bgImage.style.display = 'none';
       bgImage.src = '';
       bgVideo.style.display = 'none';
       bgVideo.pause();
       bgVideo.src = '';
 
-      await clearMediaFromDB();
-
+      localStorage.removeItem('bg_media_data');
+      localStorage.removeItem('bg_media_type');
       localStorage.removeItem('bg_dim');
       localStorage.removeItem('ui_scale');
       localStorage.removeItem('ui_vertical_pos');
@@ -999,13 +931,27 @@
       localStorage.removeItem('ui_green_color');
       localStorage.removeItem('ui_red_color');
 
+      dimRange.value = 65;
+      bgOverlay.style.background = `rgba(9, 10, 15, 0.65)`;
       applyStyles();
     });
 
-    applyStyles();
-    loadMediaFromDB();
+    function applyMediaBackground(src, type) {
+      if (type === 'video') {
+        bgImage.style.display = 'none';
+        bgVideo.src = src;
+        bgVideo.style.display = 'block';
+        bgVideo.play().catch(() => {});
+      } else {
+        bgVideo.style.display = 'none';
+        bgVideo.pause();
+        bgImage.src = src;
+        bgImage.style.display = 'block';
+      }
+    }
 
-    // Селектори
+    applyStyles();
+
     if (localStorage.getItem('saved_region')) regionSelect.value = localStorage.getItem('saved_region');
     if (localStorage.getItem('saved_queue')) queueSelect.value = localStorage.getItem('saved_queue');
 
@@ -1027,7 +973,7 @@
     });
 
     tabToday.addEventListener('click', () => {
-      if (currentDay === 'today') return;
+      if (currentDay === 'today' || isLoading) return;
       currentDay = 'today';
       tabToday.classList.add('active');
       tabTomorrow.classList.remove('active');
@@ -1035,7 +981,7 @@
     });
 
     tabTomorrow.addEventListener('click', () => {
-      if (currentDay === 'tomorrow') return;
+      if (currentDay === 'tomorrow' || isLoading) return;
       currentDay = 'tomorrow';
       tabTomorrow.classList.add('active');
       tabToday.classList.remove('active');
@@ -1045,43 +991,54 @@
     regionSelect.addEventListener('change', () => {
       localStorage.setItem('saved_region', regionSelect.value);
       updateSourceLink();
-      loadSchedule(true);
+      loadSchedule();
     });
 
     queueSelect.addEventListener('change', () => {
       localStorage.setItem('saved_queue', queueSelect.value);
-      loadSchedule(true);
+      loadSchedule();
     });
 
-    // Ручне оновлення кнопкою
-    manualRefreshBtn.addEventListener('click', () => {
-      loadSchedule(true);
-    });
+    function setControlsDisabled(disabled) {
+      regionSelect.disabled = disabled;
+      queueSelect.disabled = disabled;
+      tabToday.disabled = disabled;
+      tabTomorrow.disabled = disabled;
+    }
 
     function timeToMinutes(str) {
       const [h, m] = str.split(':').map(Number);
       return h * 60 + m;
     }
 
-    // Завантаження розкладу (force = true ігнорує серверний кеш)
-    async function loadSchedule(force = false) {
-      if (currentAbortController) {
-        currentAbortController.abort();
-      }
-      currentAbortController = new AbortController();
+    // Головна функція завантаження з наочною індикацією
+    async function loadSchedule() {
+      isLoading = true;
+      setControlsDisabled(true);
+
+      const dayTitle = currentDay === 'tomorrow' ? 'ЗАВТРА' : 'СЬОГОДНІ';
+      const queueVal = queueSelect.value;
+      const regionVal = regionSelect.value;
 
       dotLive.className = 'dot-live syncing';
-      manualRefreshBtn.classList.add('spinning');
-      slotsList.classList.add('loading');
+      document.getElementById('updateStatusText').textContent = 'Завантаження з сайту...';
 
-      const region = regionSelect.value;
-      const queue = queueSelect.value;
-      
+      // 1. Індикація по центру екрана
+      document.getElementById('caption').textContent = `СИНХРОНІЗАЦІЯ • ${dayTitle}`;
+      timerEl.className = 'main-timer loading';
+      timerEl.textContent = 'ОНОВЛЕННЯ...';
+      document.getElementById('hint').textContent = `Отримуємо графік для черги ${queueVal}...`;
+
+      // 2. Індикація в бічній панелі
+      document.getElementById('slotsList').innerHTML = `
+        <div class="loader-box">
+          <div class="spinner"></div>
+          <div>Завантаження графіка на ${dayTitle.toLowerCase()}...</div>
+        </div>
+      `;
+
       try {
-        const forceParam = force ? '&force=true' : '';
-        const res = await fetch(`/api/status?region=${region}&queue=${queue}&day=${currentDay}${forceParam}`, {
-          signal: currentAbortController.signal
-        });
+        const res = await fetch(`/api/status?region=${regionVal}&queue=${queueVal}&day=${currentDay}`);
         const data = await res.json();
         
         schedule = data.slots || [];
@@ -1091,19 +1048,19 @@
           document.getElementById('updateStatusText').textContent = `Оновлено: ${t}`;
         }
       } catch (e) {
-        if (e.name !== 'AbortError') {
-          document.getElementById('updateStatusText').textContent = 'Помилка оновлення';
-        }
+        schedule = [];
+        document.getElementById('updateStatusText').textContent = 'Помилка зв’язку';
       } finally {
+        isLoading = false;
+        setControlsDisabled(false);
         dotLive.className = 'dot-live';
-        manualRefreshBtn.classList.remove('spinning');
-        slotsList.classList.remove('loading');
         renderScheduleList();
         tick();
       }
     }
 
     function renderScheduleList() {
+      const listEl = document.getElementById('slotsList');
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -1112,7 +1069,7 @@
           ? 'Графік на завтра ще не оприлюднено обленерго' 
           : 'Графік відсутній або оновлюється на сайті';
         
-        slotsList.innerHTML = `
+        listEl.innerHTML = `
           <div style="color: #ffa502; font-size: 0.85rem; padding: 25px 12px; text-align: center; line-height: 1.4; border: 1px dashed rgba(255, 165, 2, 0.3); border-radius: 8px;">
             ${msg}
           </div>
@@ -1120,7 +1077,7 @@
         return;
       }
 
-      slotsList.innerHTML = schedule.map(slot => {
+      listEl.innerHTML = schedule.map(slot => {
         const sMin = timeToMinutes(slot.start);
         const eMin = timeToMinutes(slot.end);
         const isCurrent = (currentDay === 'today') && (currentMinutes >= sMin && currentMinutes < eMin);
@@ -1138,6 +1095,8 @@
     }
 
     function tick() {
+      if (isLoading) return; // Під час завантаження таймер не перебиває напис ОНОВЛЕННЯ
+
       const captionEl = document.getElementById('caption');
       const hintEl = document.getElementById('hint');
       const glowEnabled = localStorage.getItem('ui_glow_enabled') !== 'false';
@@ -1171,7 +1130,7 @@
         captionEl.textContent = `ЧЕРГА ${queueSelect.value}`;
         timerEl.className = 'main-timer empty' + noGlowClass;
         timerEl.textContent = 'ГРАФІК ВІДСУТНІЙ';
-        hintEl.textContent = 'Дані відсутні або оновлюються';
+        hintEl.textContent = 'Дані відсутні або оновлюються на сайті';
         return;
       }
 
@@ -1229,13 +1188,9 @@
       return `${h}:${m}:${s}`;
     }
 
-    // Перший запуск
+    // Перший старт із показом стану завантаження
     loadSchedule();
-
-    // Автооновлення 1 раз на годину (60 хв * 60 сек * 1000 мс)
-    setInterval(() => loadSchedule(false), 60 * 60 * 1000);
-
-    // Відлік таймера щосекунди
+    setInterval(loadSchedule, 2 * 60 * 1000);
     setInterval(tick, 1000);
   </script>
 </body>
