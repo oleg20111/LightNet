@@ -1008,22 +1008,49 @@
         </label>
       </div>
 
-      <!-- Пресетні теми (Перший пресет — відео Тоторо) -->
+      <!-- Пресетні теми з індивідуальними кольорами -->
       <div class="themes-title-row">
         <span class="theme-header-txt">Обрані фони (Пресетні)</span>
-        <button class="btn-sub" id="adminThemesBtn">Редагувати теми</button>
       </div>
       <div class="theme-grid" id="presetThemeGrid">
-        <!-- 1 ПРЕСЕТ: Відео Тоторо -->
-        <div class="theme-card" data-url="/totoro.mp4" data-type="video" title="Тоторо (Живий)">
+        <!-- Тема 1: Живий Тоторо (червонуватий/теплий відтінок, зсув донизу 72%) -->
+        <div class="theme-card" 
+             data-url="/totoro.mp4" 
+             data-type="video" 
+             data-text-color="#f6a090"
+             data-green-color="#48dbfb"
+             data-red-color="#ff4757"
+             data-dim="55"
+             data-pos="72"
+             title="Тоторо (Живий)">
           <video src="/totoro.mp4" autoplay loop muted playsinline></video>
           <span>Тоторо (Живий)</span>
         </div>
-        <div class="theme-card" data-url="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800" data-type="image">
-          <img src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=300" alt="Cyber" />
-          <span>Кіберпанк</span>
+
+        <!-- Тема 2: Смарагдовий дощ (бірюзово-смарагдовий текст, центр 50%) -->
+        <div class="theme-card" 
+             data-url="/emerald-rain.mp4" 
+             data-type="video" 
+             data-text-color="#48bb78"
+             data-green-color="#38ef7d"
+             data-red-color="#55d6aa"
+             data-dim="45"
+             data-pos="50"
+             title="Смарагдовий дощ">
+          <video src="/emerald-rain.mp4" autoplay loop muted playsinline></video>
+          <span>Смарагдовий дощ</span>
         </div>
-        <div class="theme-card" data-url="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800" data-type="image">
+
+        <!-- Тема 3: Глибокий мінімал -->
+        <div class="theme-card" 
+             data-url="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800" 
+             data-type="image"
+             data-text-color="#a4b0be"
+             data-green-color="#2ed573"
+             data-red-color="#ff4757"
+             data-dim="65"
+             data-pos="50"
+             title="Мінімал">
           <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=300" alt="Dark" />
           <span>Мінімал</span>
         </div>
@@ -1242,6 +1269,11 @@
       glowCheckbox.checked = glowEnabled;
       glowRadiusRange.value = glowRadius;
 
+      // Оновлюємо колірні кружечки
+      textColorPicker.parentElement.style.background = textColor;
+      greenColorPicker.parentElement.style.background = greenColor;
+      redColorPicker.parentElement.style.background = redColor;
+
       if (!glowEnabled) {
         timerEl.classList.add('no-glow');
         glowRadiusRange.disabled = true;
@@ -1274,16 +1306,19 @@
     textColorPicker.oninput = (e) => {
       document.documentElement.style.setProperty('--text-muted', e.target.value);
       localStorage.setItem('ui_text_color', e.target.value);
+      textColorPicker.parentElement.style.background = e.target.value;
     };
 
     greenColorPicker.oninput = (e) => {
       document.documentElement.style.setProperty('--green', e.target.value);
       localStorage.setItem('ui_green_color', e.target.value);
+      greenColorPicker.parentElement.style.background = e.target.value;
     };
 
     redColorPicker.oninput = (e) => {
       document.documentElement.style.setProperty('--red', e.target.value);
       localStorage.setItem('ui_red_color', e.target.value);
+      redColorPicker.parentElement.style.background = e.target.value;
     };
 
     const savedDim = localStorage.getItem('bg_dim') || 55;
@@ -1330,11 +1365,34 @@
       }
     }
 
-    // Клік по пресетній темі
+    // 1. Клік по пресетній темі: перемикає фон ТА адаптує кольори/положення
     document.querySelectorAll('#presetThemeGrid .theme-card').forEach(card => {
       card.onclick = () => {
         const url = card.getAttribute('data-url');
         const type = card.getAttribute('data-type') || 'image';
+        
+        // Зчитуємо колірну палітру пресету
+        const textColor = card.getAttribute('data-text-color');
+        const greenColor = card.getAttribute('data-green-color');
+        const redColor = card.getAttribute('data-red-color');
+        const dim = card.getAttribute('data-dim');
+        const pos = card.getAttribute('data-pos');
+
+        if (textColor) localStorage.setItem('ui_text_color', textColor);
+        if (greenColor) localStorage.setItem('ui_green_color', greenColor);
+        if (redColor) localStorage.setItem('ui_red_color', redColor);
+        if (dim) {
+          localStorage.setItem('bg_dim', dim);
+          dimRange.value = dim;
+          bgOverlay.style.background = `rgba(9, 10, 15, ${dim / 100})`;
+        }
+        if (pos) {
+          localStorage.setItem('ui_vertical_pos', pos);
+          posRange.value = pos;
+        }
+
+        applyStyles();
+
         localStorage.setItem('preset_bg_url', url);
         localStorage.setItem('preset_bg_type', type);
         clearMediaBlob();
@@ -1445,15 +1503,6 @@
     setupUserTile(1);
     setupUserTile(2);
     setupUserTile(3);
-
-    document.getElementById('adminThemesBtn').onclick = () => {
-      const newUrl = prompt('Введіть посилання на нову картинку для теми 2:');
-      if (newUrl) {
-        document.querySelectorAll('#presetThemeGrid .theme-card')[1].setAttribute('data-url', newUrl);
-        document.querySelectorAll('#presetThemeGrid .theme-card img')[0].src = newUrl;
-        localStorage.setItem('admin_custom_theme_2', newUrl);
-      }
-    };
 
     resetBgBtn.onclick = async () => {
       await clearMediaBlob('saved_media_file');
