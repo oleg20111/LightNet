@@ -13,7 +13,7 @@ const PRESETS_FILE = path.join(__dirname, 'presets.json');
 const FEEDBACKS_FILE = path.join(__dirname, 'feedbacks.json');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const GOOGLE_SHEET_URL = process.env.GOOGLE_SHEET_URL || 'https://docs.google.com/spreadsheets/d/1U-_DlB8zX1QLEt17PPnCuzrtvFR_q58c6l-SF7jZ-3E/edit?gid=1496515955#gid=1496515955';
+const GOOGLE_SHEET_URL = process.env.GOOGLE_SHEET_URL || '';
 
 const DEFAULT_PRESETS = [
   {
@@ -92,208 +92,167 @@ function saveFeedbacks(feedbacks) {
   fs.writeFileSync(FEEDBACKS_FILE, JSON.stringify(feedbacks, null, 2), 'utf-8');
 }
 
-// Конвертація посилання на Google Таблицю у прямий експорт CSV
-function buildCsvExportUrl(url) {
-  const docMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  if (!docMatch) return url;
-  const docId = docMatch[1];
+// Формування посилання CSV без помилки 404
+function getDirectCsvUrl(url) {
+  if (!url) return '';
+  if (url.includes('/pub?') && url.includes('output=csv')) {
+    return url; // Вже готовий прямий лінк експорту
+  }
+  const matchDoc = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!matchDoc) return url;
+  const docId = matchDoc[1];
 
   let gid = '0';
-  const gidMatch = url.match(/gid=([0-9]+)/);
-  if (gidMatch) gid = gidMatch[1];
+  const matchGid = url.match(/gid=([0-9]+)/);
+  if (matchGid) gid = matchGid[1];
 
   return `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
 }
 
-// Парсер CSV у табличний масив рядків
-function parseCsvRows(text) {
-  const result = [];
-  let row = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    const next = text[i + 1];
-
-    if (c === '"') {
-      if (inQuotes && next === '"') {
-        current += '"';
-        i++;
+// Парсинг CSV рядків з підтримкою цитат та крапок з комою
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+  return lines.map(line => {
+    const row = [];
+    let insideQuotes = false;
+    let entry = '';
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        insideQuotes = !insideQuotes;
+      } else if (char === ',' && !insideQuotes) {
+        row.push(entry.trim());
+        entry = '';
       } else {
-        inQuotes = !inQuotes;
+        entry += char;
       }
-    } else if (c === ',' && !inQuotes) {
-      row.push(current.trim());
-      current = '';
-    } else if ((c === '\r' || c === '\n') && !inQuotes) {
-      if (c === '\r' && next === '\n') i++;
-      row.push(current.trim());
-      if (row.some(cell => cell.length > 0)) {
-        result.push(row);
-      }
-      row = [];
-      current = '';
-    } else {
-      current += c;
     }
-  }
-  if (current.length > 0 || row.length > 0) {
-    row.push(current.trim());
-    if (row.some(cell => cell.length > 0)) {
-      result.push(row);
-    }
-  }
-  return result;
+    row.push(entry.trim());
+    return row;
+  });
 }
 
-// Кеш даних
-let scheduleCache = {
-  today: {},
-  tomorrow: {},
-  lastUpdated: null,
-  sourceUrl: GOOGLE_SHEET_URL
-};
+// Сховище розпарсеного розкладу
+// Структура: db[regionSlug][day][queue] = [{start, end, status}]
+let dbSchedules = {};
+let lastSyncTime = null;
 
-// Нормалізація часу
-function normalizeTime(t) {
-  let [h, m] = t.split(':').map(Number);
-  if (h === 24) return '23:59';
-  return `${h.toString().padStart(2, '0')}:${(m || 0).toString().padStart(2, '0')}`;
+// Словник зіставлення назв областей у таблиці з селектором на сайті
+function matchRegionSlug(text) {
+  const t = text.toLowerCase();
+  if (t.includes('полтав')) return 'poltavska-oblast';
+  if (t.includes('київськ')) return 'kyivska-oblast';
+  if (t.includes('м. київ') || t.includes('київ місто') || t === 'київ') return 'm-kyiv';
+  if (t.includes('львів')) return 'lvivska-oblast';
+  if (t.includes('дніпро')) return 'dnipropetrovska-oblast';
+  if (t.includes('одес')) return 'odeska-oblast';
+  if (t.includes('харків')) return 'kharkivska-oblast';
+  if (t.includes('вінниц')) return 'vinnytska-oblast';
+  if (t.includes('черкас')) return 'cherkaska-oblast';
+  if (t.includes('сум')) return 'sumska-oblast';
+  if (t.includes('чернігів')) return 'chernihivska-oblast';
+  if (t.includes('житомир')) return 'zhytomyrska-oblast';
+  return null;
 }
 
-// Завантаження й парсинг таблиці
-async function updateScheduleFromGoogleSheets() {
+async function syncGoogleSheets() {
+  const csvUrl = getDirectCsvUrl(GOOGLE_SHEET_URL);
+  if (!csvUrl) {
+    console.warn('[Google Sheets] GOOGLE_SHEET_URL не встановлено');
+    return;
+  }
+
   try {
-    const csvUrl = buildCsvExportUrl(GOOGLE_SHEET_URL);
-    const resp = await axios.get(csvUrl, { timeout: 12000 });
-    const rows = parseCsvRows(resp.data);
+    const response = await axios.get(csvUrl, { timeout: 15000 });
+    const rows = parseCSV(response.data);
 
-    if (!rows || rows.length === 0) return;
+    if (!rows || rows.length < 2) return;
 
-    const todaySchedules = {};
-    const tomorrowSchedules = {};
-    let currentDayMode = 'today';
+    const newDb = {};
 
-    for (let r = 0; r < rows.length; r++) {
-      const row = rows[r];
-      const rowString = row.join(' ').toLowerCase();
+    // Проходимо по рядках (починаючи з 4-го рядка, пропускаючи заголовки)
+    for (const row of rows) {
+      if (row.length < 5) continue;
 
-      // Перемикання секції "Сьогодні" / "Завтра"
-      if (rowString.includes('завтра') || rowString.includes('tomorrow') || rowString.includes('наступна доба')) {
-        currentDayMode = 'tomorrow';
-        continue;
-      } else if (rowString.includes('сьогодні') || rowString.includes('today') || rowString.includes('поточна доба')) {
-        currentDayMode = 'today';
-        continue;
-      }
+      const rawRegion = row[0] || '';   // Колонка A (Область)
+      const rawPeriod = row[1] || '';   // Колонка B (Сьогодні / Завтра)
+      const rawQueue = row[3] || '';    // Колонка D (Черга 1.1 - 6.2)
+      const rawSchedule = row[4] || ''; // Колонка E (Повний графік зі статусами)
 
-      // Шукаємо чергу у рядку (1.1 - 6.2)
-      let detectedQueue = null;
-      for (const cell of row) {
-        const m = cell.match(/(?:черга\s*|черга:\s*)?([1-6][\.\-][1-2])/i);
-        if (m) {
-          detectedQueue = m[1].replace('-', '.');
-          break;
-        }
-      }
+      const regSlug = matchRegionSlug(rawRegion);
+      if (!regSlug) continue;
 
-      if (!detectedQueue) continue;
+      const dayKey = rawPeriod.toLowerCase().includes('завтра') ? 'tomorrow' : 'today';
 
-      // Спосіб 1: Пошук прямих діапазонів часу ("16:30 - 19:00", "00:00 — 04:00")
-      const slotMatches = [...rowString.matchAll(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/g)];
-      const foundSlots = [];
+      // Витягуємо номер черги "3.2" з "Черга 3.2"
+      const qMatch = rawQueue.match(/([1-6]\.[1-2])/);
+      if (!qMatch) continue;
+      const queueKey = qMatch[1];
 
-      for (const match of slotMatches) {
-        let start = normalizeTime(match[1]);
-        let end = normalizeTime(match[2]);
+      // Парсимо графік: "00:00 – 17:30 [Є]; 17:30 – 20:00 [НЕМАЄ]; 23:30 – 24:00 [НЕМАЄ]"
+      const slots = [];
+      const parts = rawSchedule.split(';');
+
+      for (const part of parts) {
+        const item = part.trim();
+        const timeMatch = item.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+        if (!timeMatch) continue;
+
+        let start = timeMatch[1];
+        let end = timeMatch[2];
         if (end === '24:00') end = '23:59';
 
-        foundSlots.push({ start, end, status: 'off' });
+        const isOff = item.toUpperCase().includes('[НЕМАЄ]');
+
+        slots.push({
+          start,
+          end,
+          status: isOff ? 'off' : 'on'
+        });
       }
 
-      // Спосіб 2: Якщо в рядку погодинні статуси відключення ("-", "відкл", "off", "немає")
-      if (foundSlots.length === 0) {
-        let hourStart = null;
-        for (let col = 1; col < row.length; col++) {
-          const val = row[col].toLowerCase();
-          const isOff = val === '-' || val.includes('відкл') || val.includes('off') || val === 'х' || val === 'x';
-          
-          if (isOff && hourStart === null) {
-            hourStart = col - 1; // припускаємо відлік годин
-          } else if (!isOff && hourStart !== null) {
-            const h1 = hourStart.toString().padStart(2, '0') + ':00';
-            let h2 = (col - 1).toString().padStart(2, '0') + ':00';
-            if (h2 === '24:00') h2 = '23:59';
-            foundSlots.push({ start: h1, end: h2, status: 'off' });
-            hourStart = null;
-          }
-        }
-        if (hourStart !== null) {
-          const h1 = hourStart.toString().padStart(2, '0') + ':00';
-          foundSlots.push({ start: h1, end: '23:59', status: 'off' });
-        }
-      }
+      slots.sort((a, b) => a.start.localeCompare(b.start));
 
-      const targetBucket = currentDayMode === 'tomorrow' ? tomorrowSchedules : todaySchedules;
-      if (!targetBucket[detectedQueue]) {
-        targetBucket[detectedQueue] = [];
-      }
-      targetBucket[detectedQueue].push(...foundSlots);
+      if (!newDb[regSlug]) newDb[regSlug] = { today: {}, tomorrow: {} };
+      if (!newDb[regSlug][dayKey]) newDb[regSlug][dayKey] = {};
+
+      newDb[regSlug][dayKey][queueKey] = slots;
     }
 
-    // Дедуплікація та сортування
-    for (const q in todaySchedules) {
-      todaySchedules[q] = cleanAndSortSlots(todaySchedules[q]);
-    }
-    for (const q in tomorrowSchedules) {
-      tomorrowSchedules[q] = cleanAndSortSlots(tomorrowSchedules[q]);
-    }
-
-    scheduleCache = {
-      today: todaySchedules,
-      tomorrow: tomorrowSchedules,
-      lastUpdated: new Date().toISOString(),
-      sourceUrl: GOOGLE_SHEET_URL
-    };
-
-    console.log(`[Google Sheets] Таблицю оновлено о ${new Date().toLocaleTimeString('uk-UA')}`);
+    dbSchedules = newDb;
+    lastSyncTime = new Date().toISOString();
+    console.log(`[Google Sheets] Успішно оновлено базу о ${new Date().toLocaleTimeString('uk-UA')}`);
   } catch (err) {
-    console.error('[Google Sheets] Помилка синхронізації з таблицею:', err.message);
+    console.error('[Google Sheets] Помилка синхронізації:', err.message);
   }
 }
 
-function cleanAndSortSlots(slots) {
-  const map = new Map();
-  for (const s of slots) {
-    map.set(`${s.start}-${s.end}`, s);
-  }
-  return Array.from(map.values()).sort((a, b) => a.start.localeCompare(b.start));
-}
+// Автоматичне оновлення кожні 30 хвилин
+setInterval(syncGoogleSheets, 30 * 60 * 1000);
+// Перше оновлення одразу після старту
+syncGoogleSheets();
 
-// Фоновий тригер кожні 30 хвилин
-setInterval(updateScheduleFromGoogleSheets, 30 * 60 * 1000);
-// Первинний запуск
-updateScheduleFromGoogleSheets();
-
-// API статусу
+// Ендпоінт статусу для сайту
 app.get('/api/status', (req, res) => {
+  const region = req.query.region || 'poltavska-oblast';
   const queue = (req.query.queue || '3.2').replace('-', '.');
   const day = req.query.day || 'today';
 
-  const dayMap = day === 'tomorrow' ? scheduleCache.tomorrow : scheduleCache.today;
-  const slots = dayMap[queue] || [];
+  const regData = dbSchedules[region];
+  const dayData = regData ? regData[day] : null;
+  const slots = (dayData && dayData[queue]) ? dayData[queue] : [];
 
   res.json({
+    region,
     queue,
     day,
     slots,
-    sourceUrl: scheduleCache.sourceUrl,
-    lastUpdated: scheduleCache.lastUpdated || new Date().toISOString()
+    sourceUrl: GOOGLE_SHEET_URL,
+    lastUpdated: lastSyncTime || new Date().toISOString()
   });
 });
 
-// Керування темами
+// Пресети
 app.get('/api/presets', (req, res) => {
   res.json(getPresets());
 });
@@ -322,11 +281,11 @@ app.post('/api/admin/presets', (req, res) => {
     savePresets(presets);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Помилка збереження файлу' });
+    res.status(500).json({ error: 'Помилка збереження' });
   }
 });
 
-// Форма відгуків
+// Відгуки
 app.post('/api/feedback', (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !message) {
