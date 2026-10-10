@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,9 +11,9 @@ app.use(express.static('public'));
 
 const PRESETS_FILE = path.join(__dirname, 'presets.json');
 const FEEDBACKS_FILE = path.join(__dirname, 'feedbacks.json');
-const SCHEDULES_DB_FILE = path.join(__dirname, 'schedules_db.json');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const GOOGLE_SHEET_URL = process.env.GOOGLE_SHEET_URL || 'https://docs.google.com/spreadsheets/d/1U-_DlB8zX1QLEt17PPnCuzrtvFR_q58c6l-SF7jZ-3E/edit?gid=1496515955#gid=1496515955';
 
 const DEFAULT_PRESETS = [
   {
@@ -93,184 +92,216 @@ function saveFeedbacks(feedbacks) {
   fs.writeFileSync(FEEDBACKS_FILE, JSON.stringify(feedbacks, null, 2), 'utf-8');
 }
 
-// База розкладів
-function getSchedulesDb() {
-  try {
-    if (!fs.existsSync(SCHEDULES_DB_FILE)) {
-      fs.writeFileSync(SCHEDULES_DB_FILE, JSON.stringify({}, null, 2), 'utf-8');
-      return {};
+// Конвертація посилання на Google Таблицю у прямий експорт CSV
+function buildCsvExportUrl(url) {
+  const docMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!docMatch) return url;
+  const docId = docMatch[1];
+
+  let gid = '0';
+  const gidMatch = url.match(/gid=([0-9]+)/);
+  if (gidMatch) gid = gidMatch[1];
+
+  return `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
+}
+
+// Парсер CSV у табличний масив рядків
+function parseCsvRows(text) {
+  const result = [];
+  let row = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
+
+    if (c === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      row.push(current.trim());
+      current = '';
+    } else if ((c === '\r' || c === '\n') && !inQuotes) {
+      if (c === '\r' && next === '\n') i++;
+      row.push(current.trim());
+      if (row.some(cell => cell.length > 0)) {
+        result.push(row);
+      }
+      row = [];
+      current = '';
+    } else {
+      current += c;
     }
-    return JSON.parse(fs.readFileSync(SCHEDULES_DB_FILE, 'utf-8'));
-  } catch (e) {
-    return {};
   }
+  if (current.length > 0 || row.length > 0) {
+    row.push(current.trim());
+    if (row.some(cell => cell.length > 0)) {
+      result.push(row);
+    }
+  }
+  return result;
 }
 
-function saveSchedulesDb(db) {
+// Кеш даних
+let scheduleCache = {
+  today: {},
+  tomorrow: {},
+  lastUpdated: null,
+  sourceUrl: GOOGLE_SHEET_URL
+};
+
+// Нормалізація часу
+function normalizeTime(t) {
+  let [h, m] = t.split(':').map(Number);
+  if (h === 24) return '23:59';
+  return `${h.toString().padStart(2, '0')}:${(m || 0).toString().padStart(2, '0')}`;
+}
+
+// Завантаження й парсинг таблиці
+async function updateScheduleFromGoogleSheets() {
   try {
-    fs.writeFileSync(SCHEDULES_DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('Помилка запису бази розкладів:', e.message);
-  }
-}
+    const csvUrl = buildCsvExportUrl(GOOGLE_SHEET_URL);
+    const resp = await axios.get(csvUrl, { timeout: 12000 });
+    const rows = parseCsvRows(resp.data);
 
-// Отримання поточної дати за київським часом (YYYY-MM-DD)
-function getKyivDateString(offsetDays = 0) {
-  const now = new Date();
-  now.setDate(now.getDate() + offsetDays);
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Kyiv',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-  return formatter.format(now);
-}
+    if (!rows || rows.length === 0) return;
 
-// Парсер джерела без зависання
-async function parseScheduleFromSource(regionSlug, targetQueue, day = 'today') {
-  const url = `https://bezsvitla.com.ua/${regionSlug}`;
-  const response = await axios.get(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Accept-Language': 'uk-UA,uk;q=0.9,en;q=0.8'
-    },
-    timeout: 10000
-  });
+    const todaySchedules = {};
+    const tomorrowSchedules = {};
+    let currentDayMode = 'today';
 
-  const $ = cheerio.load(response.data);
-  let targetCard = null;
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      const rowString = row.join(' ').toLowerCase();
 
-  $('*').each((_, el) => {
-    if (targetCard) return;
-    const text = $(el).text().trim();
-    if (text === `Черга ${targetQueue}` || text === `Черга: ${targetQueue}`) {
-      let current = $(el).parent();
-      while (current.length && current[0].tagName !== 'body') {
-        const parentText = current.parent().text() || '';
-        const queueMatches = parentText.match(/Черга\s+\d/g) || [];
-        if (queueMatches.length > 1) {
-          targetCard = current;
+      // Перемикання секції "Сьогодні" / "Завтра"
+      if (rowString.includes('завтра') || rowString.includes('tomorrow') || rowString.includes('наступна доба')) {
+        currentDayMode = 'tomorrow';
+        continue;
+      } else if (rowString.includes('сьогодні') || rowString.includes('today') || rowString.includes('поточна доба')) {
+        currentDayMode = 'today';
+        continue;
+      }
+
+      // Шукаємо чергу у рядку (1.1 - 6.2)
+      let detectedQueue = null;
+      for (const cell of row) {
+        const m = cell.match(/(?:черга\s*|черга:\s*)?([1-6][\.\-][1-2])/i);
+        if (m) {
+          detectedQueue = m[1].replace('-', '.');
           break;
         }
-        current = current.parent();
       }
-      if (!targetCard) targetCard = current;
-    }
-  });
 
-  let slots = [];
-  if (targetCard && targetCard.length) {
-    targetCard.find('div, li, tr').each((_, row) => {
-      const rowText = $(row).text().trim();
-      const match = rowText.match(/^(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})$/);
-      if (match && (rowText.match(/(\d{1,2}:\d{2})/g) || []).length === 2) {
-        const start = match[1];
-        let end = match[2];
+      if (!detectedQueue) continue;
+
+      // Спосіб 1: Пошук прямих діапазонів часу ("16:30 - 19:00", "00:00 — 04:00")
+      const slotMatches = [...rowString.matchAll(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/g)];
+      const foundSlots = [];
+
+      for (const match of slotMatches) {
+        let start = normalizeTime(match[1]);
+        let end = normalizeTime(match[2]);
         if (end === '24:00') end = '23:59';
 
-        const html = $(row).html().toLowerCase();
-        const isOff = html.includes('rgb(254') || 
-                      html.includes('rgb(255') || 
-                      html.includes('rose') || 
-                      html.includes('danger') || 
-                      html.includes('polygon') || 
-                      html.includes('bolt') ||
-                      html.includes('m13');
+        foundSlots.push({ start, end, status: 'off' });
+      }
 
-        if (!slots.some(s => s.start === start && s.end === end)) {
-          slots.push({ start, end, status: isOff ? 'off' : 'on' });
+      // Спосіб 2: Якщо в рядку погодинні статуси відключення ("-", "відкл", "off", "немає")
+      if (foundSlots.length === 0) {
+        let hourStart = null;
+        for (let col = 1; col < row.length; col++) {
+          const val = row[col].toLowerCase();
+          const isOff = val === '-' || val.includes('відкл') || val.includes('off') || val === 'х' || val === 'x';
+          
+          if (isOff && hourStart === null) {
+            hourStart = col - 1; // припускаємо відлік годин
+          } else if (!isOff && hourStart !== null) {
+            const h1 = hourStart.toString().padStart(2, '0') + ':00';
+            let h2 = (col - 1).toString().padStart(2, '0') + ':00';
+            if (h2 === '24:00') h2 = '23:59';
+            foundSlots.push({ start: h1, end: h2, status: 'off' });
+            hourStart = null;
+          }
+        }
+        if (hourStart !== null) {
+          const h1 = hourStart.toString().padStart(2, '0') + ':00';
+          foundSlots.push({ start: h1, end: '23:59', status: 'off' });
         }
       }
-    });
-  }
 
-  slots.sort((a, b) => a.start.localeCompare(b.start));
-
-  return {
-    region: regionSlug,
-    queue: targetQueue,
-    day,
-    slots,
-    date: getKyivDateString(day === 'tomorrow' ? 1 : 0),
-    lastUpdated: new Date().toISOString()
-  };
-}
-
-// Фонове оновлення для популярних черг
-async function runBackgroundSync() {
-  const db = getSchedulesDb();
-  const regions = ['poltavska-oblast', 'kyivska-oblast', 'm-kyiv'];
-  const queues = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2', '5.1', '5.2', '6.1', '6.2'];
-
-  for (const reg of regions) {
-    for (const q of queues) {
-      for (const day of ['today', 'tomorrow']) {
-        const dateKey = getKyivDateString(day === 'tomorrow' ? 1 : 0);
-        const recordKey = `${reg}_${q}_${day}_${dateKey}`;
-
-        try {
-          const res = await parseScheduleFromSource(reg, q, day);
-          db[recordKey] = res;
-        } catch (e) {
-          // тихо пропускаємо помилку, не блокуючи роботу
-        }
+      const targetBucket = currentDayMode === 'tomorrow' ? tomorrowSchedules : todaySchedules;
+      if (!targetBucket[detectedQueue]) {
+        targetBucket[detectedQueue] = [];
       }
+      targetBucket[detectedQueue].push(...foundSlots);
     }
+
+    // Дедуплікація та сортування
+    for (const q in todaySchedules) {
+      todaySchedules[q] = cleanAndSortSlots(todaySchedules[q]);
+    }
+    for (const q in tomorrowSchedules) {
+      tomorrowSchedules[q] = cleanAndSortSlots(tomorrowSchedules[q]);
+    }
+
+    scheduleCache = {
+      today: todaySchedules,
+      tomorrow: tomorrowSchedules,
+      lastUpdated: new Date().toISOString(),
+      sourceUrl: GOOGLE_SHEET_URL
+    };
+
+    console.log(`[Google Sheets] Таблицю оновлено о ${new Date().toLocaleTimeString('uk-UA')}`);
+  } catch (err) {
+    console.error('[Google Sheets] Помилка синхронізації з таблицею:', err.message);
   }
-  saveSchedulesDb(db);
 }
 
-// Запускаємо фоновий збір кожні 15 хвилин
-setInterval(runBackgroundSync, 15 * 60 * 1000);
-// Первинний запуск через 5 секунд після старту сервера
-setTimeout(runBackgroundSync, 5000);
+function cleanAndSortSlots(slots) {
+  const map = new Map();
+  for (const s of slots) {
+    map.set(`${s.start}-${s.end}`, s);
+  }
+  return Array.from(map.values()).sort((a, b) => a.start.localeCompare(b.start));
+}
 
-// Маршрут отримання статусу: МИТТЄВА віддача з бази або допарсинг
-app.get('/api/status', async (req, res) => {
-  const region = req.query.region || 'poltavska-oblast';
-  const queue = req.query.queue || '3.2';
+// Фоновий тригер кожні 30 хвилин
+setInterval(updateScheduleFromGoogleSheets, 30 * 60 * 1000);
+// Первинний запуск
+updateScheduleFromGoogleSheets();
+
+// API статусу
+app.get('/api/status', (req, res) => {
+  const queue = (req.query.queue || '3.2').replace('-', '.');
   const day = req.query.day || 'today';
 
-  const dateKey = getKyivDateString(day === 'tomorrow' ? 1 : 0);
-  const recordKey = `${region}_${queue}_${day}_${dateKey}`;
+  const dayMap = day === 'tomorrow' ? scheduleCache.tomorrow : scheduleCache.today;
+  const slots = dayMap[queue] || [];
 
-  const db = getSchedulesDb();
-
-  // Якщо графік для сьогоднішньої календарної дати вже є в базі — віддаємо за 5 мс!
-  if (db[recordKey] && Array.isArray(db[recordKey].slots)) {
-    return res.json(db[recordKey]);
-  }
-
-  // Якщо запитано рідкісну чергу, якої ще немає в базі — парсимо один раз і зберігаємо
-  try {
-    const freshData = await parseScheduleFromSource(region, queue, day);
-    db[recordKey] = freshData;
-    saveSchedulesDb(db);
-    return res.json(freshData);
-  } catch (err) {
-    return res.json({
-      region,
-      queue,
-      day,
-      slots: [],
-      date: dateKey,
-      lastUpdated: new Date().toISOString()
-    });
-  }
+  res.json({
+    queue,
+    day,
+    slots,
+    sourceUrl: scheduleCache.sourceUrl,
+    lastUpdated: scheduleCache.lastUpdated || new Date().toISOString()
+  });
 });
 
-// Публічні пресети
+// Керування темами
 app.get('/api/presets', (req, res) => {
   res.json(getPresets());
 });
 
-// Сторінка адмінки
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Авторизація адміна
 app.post('/api/admin/auth', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
@@ -279,46 +310,40 @@ app.post('/api/admin/auth', (req, res) => {
   return res.status(401).json({ error: 'Невірний пароль адміністратора' });
 });
 
-// Збереження пресетів
 app.post('/api/admin/presets', (req, res) => {
   const { password, presets } = req.body;
   if (password !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Доступ заборонено' });
   }
   if (!Array.isArray(presets)) {
-    return res.status(400).json({ error: 'Некоректний формат списку' });
+    return res.status(400).json({ error: 'Некоректний формат' });
   }
   try {
     savePresets(presets);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Помилка збереження файлу пресетів' });
+    res.status(500).json({ error: 'Помилка збереження файлу' });
   }
 });
 
-// Відправка відгуку
+// Форма відгуків
 app.post('/api/feedback', (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !message) {
     return res.status(400).json({ error: "Будь ласка, заповніть ім'я та повідомлення" });
   }
-
   const list = getFeedbacks();
-  const newFeedback = {
+  list.unshift({
     id: Date.now().toString(),
     name: name.trim().slice(0, 100),
     email: (email || '').trim().slice(0, 150),
     message: message.trim().slice(0, 1500),
     createdAt: new Date().toISOString()
-  };
-
-  list.unshift(newFeedback);
+  });
   saveFeedbacks(list);
-
   res.json({ success: true, message: 'Дякуємо за ваш відгук!' });
 });
 
-// Отримання відгуків в адмінці
 app.post('/api/admin/feedbacks', (req, res) => {
   const { password } = req.body;
   if (password !== ADMIN_PASSWORD) {
