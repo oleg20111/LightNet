@@ -41,6 +41,8 @@
       z-index: 0;
       overflow: hidden;
       pointer-events: none;
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     .bg-media-container img,
@@ -49,6 +51,7 @@
       height: 100%;
       object-fit: cover;
       display: none;
+      will-change: transform;
     }
 
     .bg-overlay {
@@ -204,6 +207,7 @@
       pointer-events: none;
       z-index: 10;
       transition: top 0.15s ease-out;
+      will-change: transform;
     }
 
     .status-caption {
@@ -876,39 +880,47 @@
     }
     .btn-action:hover { background: rgba(255, 255, 255, 0.16); }
 
-    /* Нижня панель навігації для мобільних (Mobile Dock) */
     .mobile-dock-nav {
       display: none;
     }
 
-    /* --- АДАПТИВНІСТЬ ПІД СМАРТФОНИ ТА ПЛАНШЕТИ --- */
+    /* --- АДАПТИВНІСТЬ ПІД СМАРТФОНИ ТА ПРИСКОРЕННЯ GPU --- */
     @media (max-width: 768px) {
+      /* Полегшений неон без просідання FPS */
+      .main-timer {
+        filter: none !important;
+        text-shadow: 0 0 14px currentColor;
+      }
+      .main-timer.no-glow {
+        text-shadow: none !important;
+      }
+
       .top-drawer-container {
-        left: 12px;
-        right: 60px;
+        left: 10px;
+        right: 64px;
         transform: translateY(calc(-100% + 22px));
       }
 
       .controls-meta {
-        padding: 10px 12px;
-        gap: 8px;
+        padding: 8px 10px;
+        gap: 6px;
         width: 100%;
         border-radius: 0 0 14px 14px;
       }
 
       .pill-select-wrapper {
-        padding: 5px 10px;
+        padding: 5px 8px;
         flex: 1;
       }
 
       .pill-select {
-        font-size: 0.8rem;
-        padding-right: 14px;
+        font-size: 0.78rem;
+        padding-right: 12px;
         width: 100%;
       }
 
       .fullscreen-btn {
-        top: 14px;
+        top: 10px;
         right: 12px;
         padding: 8px;
         border-radius: 50%;
@@ -923,7 +935,7 @@
       }
 
       .feedback-pill-btn {
-        display: none; /* винесено в мобільний док знизу */
+        display: none;
       }
 
       .update-status-pill {
@@ -931,7 +943,7 @@
         font-size: 0.78rem;
       }
 
-      /* Права шторка графіка як мобільний Bottom Sheet */
+      /* ПОВНІСТЮ ПРИХОВАНО БІЧНУ СМУГУ "ГРАФІК" НА МОБІЛЬНИХ */
       .drawer-container {
         top: auto;
         bottom: 0;
@@ -948,7 +960,9 @@
         transform: translateY(0);
       }
 
-      .drawer-handle { display: none; }
+      .drawer-handle {
+        display: none !important;
+      }
 
       .schedule-panel {
         width: 100%;
@@ -959,7 +973,7 @@
 
       .close-sheet-btn { display: block; }
 
-      /* Нижня шторка стилів на мобільних */
+      /* Шторка налаштувань на телефонах */
       .bottom-bg-drawer {
         right: 0;
         left: 0;
@@ -971,7 +985,9 @@
         transform: translateY(0);
       }
 
-      .bottom-drawer-handle { display: none; }
+      .bottom-drawer-handle {
+        display: none !important;
+      }
 
       .bg-controls-panel {
         width: 100%;
@@ -980,14 +996,14 @@
         padding: 18px 20px 30px;
       }
 
-      /* Показ мобільного доку внизу */
+      /* Нижній мобільний бар */
       .mobile-dock-nav {
         position: absolute;
         bottom: 12px;
         left: 14px;
         right: 14px;
         height: 52px;
-        background: rgba(20, 24, 33, 0.9);
+        background: rgba(20, 24, 33, 0.92);
         backdrop-filter: blur(20px);
         border: 1px solid var(--border);
         border-radius: 26px;
@@ -1869,15 +1885,13 @@
       const regionVal = regionSelect.value;
 
       document.getElementById('caption').textContent = `СИНХРОНІЗАЦІЯ • ${dayTitle}`;
-      timerEl.className = 'main-timer loading';
-      timerEl.textContent = 'ОНОВЛЕННЯ...';
-      document.getElementById('hint').textContent = `Отримуємо графік для черги ${queueVal}...`;
-
-      document.getElementById('slotsList').innerHTML = `
-        <div style="text-align:center; padding: 40px 10px; color: #8391a5; font-size: 0.9rem;">
-          Завантаження розкладу...
-        </div>
-      `;
+      
+      // Якщо в пам'яті ще немає графіка взагалі, показуємо статус, інакше просто тихо оновлюємо
+      if (!schedule || schedule.length === 0) {
+        timerEl.className = 'main-timer loading';
+        timerEl.textContent = 'ОТРИМАННЯ...';
+        document.getElementById('hint').textContent = `Завантажуємо актуальний графік...`;
+      }
 
       try {
         const res = await fetch(`/api/status?region=${regionVal}&queue=${queueVal}&day=${currentDay}`);
@@ -1890,7 +1904,7 @@
         }
       } catch (e) {
         schedule = [];
-        document.getElementById('updateStatusText').textContent = 'Помилка зв’язку';
+        document.getElementById('updateStatusText').textContent = 'Автономний режим';
       } finally {
         isLoading = false;
         renderScheduleList();
@@ -2063,7 +2077,7 @@
     }
 
     loadSchedule();
-    setInterval(loadSchedule, 30 * 60 * 1000);
+    setInterval(loadSchedule, 5 * 60 * 1000); // тихе оновлення кожні 5 хвилин
     setInterval(tick, 1000);
   </script>
 </body>
