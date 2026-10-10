@@ -1230,7 +1230,7 @@
       </div>
       <span id="updateStatusText">Оновлено: --:--</span>
       <span>•</span>
-      <a id="externalSourceLink" href="#" target="_blank" style="color: #8391a5; text-decoration: none;">Таблиця розкладу</a>
+      <a id="externalSourceLink" href="https://bezsvitla.com.ua/poltavska-oblast" target="_blank" style="color: #8391a5; text-decoration: none;">bezsvitla.com.ua</a>
     </div>
 
     <button class="feedback-pill-btn" id="openModalBtn">
@@ -1863,6 +1863,7 @@
       const regionVal = regionSelect.value;
 
       document.getElementById('caption').textContent = `СИНХРОНІЗАЦІЯ • ${dayTitle}`;
+      document.getElementById('externalSourceLink').href = `https://bezsvitla.com.ua/${regionVal}`;
 
       try {
         const res = await fetch(`/api/status?region=${regionVal}&queue=${queueVal}&day=${currentDay}`);
@@ -1873,9 +1874,7 @@
           document.getElementById('externalSourceLink').href = data.sourceUrl;
         }
 
-        if (data.sheetUpdatedTime) {
-          document.getElementById('updateStatusText').textContent = `Оновлено: ${data.sheetUpdatedTime}`;
-        } else if (data.lastUpdated) {
+        if (data.lastUpdated) {
           const t = new Date(data.lastUpdated).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
           document.getElementById('updateStatusText').textContent = `Оновлено: ${t}`;
         }

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
 
@@ -13,7 +14,6 @@ const PRESETS_FILE = path.join(__dirname, 'presets.json');
 const FEEDBACKS_FILE = path.join(__dirname, 'feedbacks.json');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const GOOGLE_SHEET_URL = process.env.GOOGLE_SHEET_URL || '';
 
 const DEFAULT_PRESETS = [
   {
@@ -95,164 +95,152 @@ function saveFeedbacks(feedbacks) {
   fs.writeFileSync(FEEDBACKS_FILE, JSON.stringify(feedbacks, null, 2), 'utf-8');
 }
 
-function getDirectCsvUrl(url) {
-  if (!url) return '';
-  if (url.includes('/pub?') && url.includes('output=csv')) {
-    return url;
+// Дата по Киеву YYYY-MM-DD
+function getKyivDateString(offsetDays = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Kyiv',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(d);
+}
+
+// Кэш в памяти на 5 минут
+const memoryCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function fetchScheduleFromBezsvitla(regionSlug, targetQueue, day = 'today') {
+  const isTomorrow = day === 'tomorrow';
+  const dateKey = getKyivDateString(isTomorrow ? 1 : 0);
+  const cacheKey = `${regionSlug}_${targetQueue}_${day}_${dateKey}`;
+
+  const cached = memoryCache.get(cacheKey);
+  if (cached && (Date.now() - cached.time < CACHE_TTL_MS)) {
+    return cached.data;
   }
-  const matchDoc = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  if (!matchDoc) return url;
-  const docId = matchDoc[1];
 
-  let gid = '0';
-  const matchGid = url.match(/gid=([0-9]+)/);
-  if (matchGid) gid = matchGid[1];
-
-  return `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
-}
-
-function parseCSV(text) {
-  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
-  return lines.map(line => {
-    const row = [];
-    let insideQuotes = false;
-    let entry = '';
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        insideQuotes = !insideQuotes;
-      } else if (char === ',' && !insideQuotes) {
-        row.push(entry.trim());
-        entry = '';
-      } else {
-        entry += char;
-      }
-    }
-    row.push(entry.trim());
-    return row;
+  const url = `https://bezsvitla.com.ua/${regionSlug}`;
+  const response = await axios.get(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept-Language': 'uk-UA,uk;q=0.9'
+    },
+    timeout: 10000
   });
-}
 
-let dbSchedules = {};
-let tableUpdatedTimestamp = null;
+  const $ = cheerio.load(response.data);
+  const pageText = $('body').text().toLowerCase();
 
-function matchRegionSlug(text) {
-  const t = text.toLowerCase();
-  if (t.includes('полтав')) return 'poltavska-oblast';
-  if (t.includes('київськ')) return 'kyivska-oblast';
-  if (t.includes('м. київ') || t.includes('київ місто') || t === 'київ') return 'm-kyiv';
-  if (t.includes('львів')) return 'lvivska-oblast';
-  if (t.includes('дніпро')) return 'dnipropetrovska-oblast';
-  if (t.includes('одес')) return 'odeska-oblast';
-  if (t.includes('харків')) return 'kharkivska-oblast';
-  if (t.includes('вінниц')) return 'vinnytska-oblast';
-  if (t.includes('черкас')) return 'cherkaska-oblast';
-  if (t.includes('сум')) return 'sumska-oblast';
-  if (t.includes('чернігів')) return 'chernihivska-oblast';
-  if (t.includes('житомир')) return 'zhytomyrska-oblast';
-  return null;
-}
+  // Если запрашивают завтра, проверяем есть ли вообще упоминание завтрашнего графика
+  if (isTomorrow) {
+    const hasTomorrowSchedule = pageText.includes('завтра') || 
+                                pageText.includes('на наступну добу') || 
+                                pageText.includes('графік на завтра');
+    if (!hasTomorrowSchedule) {
+      const emptyResult = {
+        region: regionSlug,
+        queue: targetQueue,
+        day,
+        date: dateKey,
+        slots: [],
+        sourceUrl: url,
+        lastUpdated: new Date().toISOString()
+      };
+      memoryCache.set(cacheKey, { data: emptyResult, time: Date.now() });
+      return emptyResult;
+    }
+  }
 
-async function syncGoogleSheets() {
-  const csvUrl = getDirectCsvUrl(GOOGLE_SHEET_URL);
-  if (!csvUrl) return;
-
-  try {
-    const response = await axios.get(csvUrl, { timeout: 15000 });
-    const rows = parseCSV(response.data);
-
-    if (!rows || rows.length < 2) return;
-
-    for (let i = 0; i < Math.min(5, rows.length); i++) {
-      const rowStr = rows[i].join(' ');
-      if (rowStr.toLowerCase().includes('останнє') || rowStr.toLowerCase().includes('оновлення')) {
-        for (const cell of rows[i]) {
-          const timeMatch = cell.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
-          if (timeMatch && !cell.toLowerCase().includes('останнє')) {
-            tableUpdatedTimestamp = cell.trim();
-            break;
-          }
+  let targetCard = null;
+  $('*').each((_, el) => {
+    if (targetCard) return;
+    const text = $(el).text().trim();
+    if (text === `Черга ${targetQueue}` || text === `Черга: ${targetQueue}`) {
+      let current = $(el).parent();
+      
+      if (isTomorrow) {
+        let blockContext = current.text().toLowerCase();
+        if (!blockContext.includes('завтра')) {
+          return;
         }
       }
-      if (tableUpdatedTimestamp) break;
+
+      while (current.length && current[0].tagName !== 'body') {
+        const parentText = current.parent().text() || '';
+        const queueMatches = parentText.match(/Черга\s+\d/g) || [];
+        if (queueMatches.length > 1) {
+          targetCard = current;
+          break;
+        }
+        current = current.parent();
+      }
+      if (!targetCard) targetCard = current;
     }
+  });
 
-    const newDb = {};
-
-    for (const row of rows) {
-      if (row.length < 5) continue;
-
-      const rawRegion = row[0] || '';
-      const rawPeriod = row[1] || '';
-      const rawQueue = row[3] || '';
-      const rawSchedule = row[4] || '';
-
-      const regSlug = matchRegionSlug(rawRegion);
-      if (!regSlug) continue;
-
-      const dayKey = rawPeriod.toLowerCase().includes('завтра') ? 'tomorrow' : 'today';
-
-      const qMatch = rawQueue.match(/([1-6]\.[1-2])/);
-      if (!qMatch) continue;
-      const queueKey = qMatch[1];
-
-      const slots = [];
-      const parts = rawSchedule.split(';');
-
-      for (const part of parts) {
-        const item = part.trim();
-        const timeMatch = item.match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
-        if (!timeMatch) continue;
-
-        let start = timeMatch[1];
-        let end = timeMatch[2];
+  let slots = [];
+  if (targetCard && targetCard.length) {
+    targetCard.find('div, li, tr').each((_, row) => {
+      const rowText = $(row).text().trim();
+      const match = rowText.match(/^(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})$/);
+      if (match && (rowText.match(/(\d{1,2}:\d{2})/g) || []).length === 2) {
+        const start = match[1];
+        let end = match[2];
         if (end === '24:00') end = '23:59';
 
-        const isOff = item.toUpperCase().includes('[НЕМАЄ]');
+        const html = $(row).html().toLowerCase();
+        const isOff = html.includes('rgb(254') || 
+                      html.includes('rgb(255') || 
+                      html.includes('rose') || 
+                      html.includes('danger') || 
+                      html.includes('polygon') || 
+                      html.includes('bolt') ||
+                      html.includes('m13');
 
-        slots.push({
-          start,
-          end,
-          status: isOff ? 'off' : 'on'
-        });
+        if (!slots.some(s => s.start === start && s.end === end)) {
+          slots.push({ start, end, status: isOff ? 'off' : 'on' });
+        }
       }
-
-      slots.sort((a, b) => a.start.localeCompare(b.start));
-
-      if (!newDb[regSlug]) newDb[regSlug] = { today: {}, tomorrow: {} };
-      if (!newDb[regSlug][dayKey]) newDb[regSlug][dayKey] = {};
-
-      newDb[regSlug][dayKey][queueKey] = slots;
-    }
-
-    dbSchedules = newDb;
-    console.log(`[Google Sheets] Базу оновлено з таблиці. Час таблиці: ${tableUpdatedTimestamp}`);
-  } catch (err) {
-    console.error('[Google Sheets] Помилка синхронізації:', err.message);
+    });
   }
+
+  slots.sort((a, b) => a.start.localeCompare(b.start));
+
+  const result = {
+    region: regionSlug,
+    queue: targetQueue,
+    day,
+    date: dateKey,
+    slots,
+    sourceUrl: url,
+    lastUpdated: new Date().toISOString()
+  };
+
+  memoryCache.set(cacheKey, { data: result, time: Date.now() });
+  return result;
 }
 
-setInterval(syncGoogleSheets, 30 * 60 * 1000);
-syncGoogleSheets();
-
-app.get('/api/status', (req, res) => {
+app.get('/api/status', async (req, res) => {
   const region = req.query.region || 'poltavska-oblast';
   const queue = (req.query.queue || '3.2').replace('-', '.');
   const day = req.query.day || 'today';
 
-  const regData = dbSchedules[region];
-  const dayData = regData ? regData[day] : null;
-  const slots = (dayData && dayData[queue]) ? dayData[queue] : [];
-
-  res.json({
-    region,
-    queue,
-    day,
-    slots,
-    sourceUrl: GOOGLE_SHEET_URL,
-    sheetUpdatedTime: tableUpdatedTimestamp || '',
-    lastUpdated: new Date().toISOString()
-  });
+  try {
+    const data = await fetchScheduleFromBezsvitla(region, queue, day);
+    res.json(data);
+  } catch (err) {
+    res.json({
+      region,
+      queue,
+      day,
+      slots: [],
+      sourceUrl: `https://bezsvitla.com.ua/${region}`,
+      error: 'Помилка отримання даних',
+      lastUpdated: new Date().toISOString()
+    });
+  }
 });
 
 app.get('/api/presets', (req, res) => {
@@ -283,7 +271,7 @@ app.post('/api/admin/presets', (req, res) => {
     savePresets(presets);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Помилка збереження' });
+    res.status(500).json({ error: 'Помилка збереження файлу' });
   }
 });
 
