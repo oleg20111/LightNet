@@ -20,6 +20,7 @@ const DEFAULT_PRESETS = [
     id: 'totoro',
     name: 'Тоторо (Живий)',
     url: '/totoro.mp4',
+    mobileUrl: '/totoro-mobile.mp4',
     type: 'video',
     textColor: '#f6a090',
     greenColor: '#48dbfb',
@@ -34,6 +35,7 @@ const DEFAULT_PRESETS = [
     id: 'emerald',
     name: 'Смарагдовий дощ',
     url: '/emerald-rain.mp4',
+    mobileUrl: '/emerald-rain-mobile.mp4',
     type: 'video',
     textColor: '#48bb78',
     greenColor: '#38ef7d',
@@ -48,6 +50,7 @@ const DEFAULT_PRESETS = [
     id: 'minimal',
     name: 'Мінімал',
     url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800',
+    mobileUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800',
     type: 'image',
     textColor: '#a4b0be',
     greenColor: '#2ed573',
@@ -92,11 +95,10 @@ function saveFeedbacks(feedbacks) {
   fs.writeFileSync(FEEDBACKS_FILE, JSON.stringify(feedbacks, null, 2), 'utf-8');
 }
 
-// Формування посилання CSV без помилки 404
 function getDirectCsvUrl(url) {
   if (!url) return '';
   if (url.includes('/pub?') && url.includes('output=csv')) {
-    return url; // Вже готовий прямий лінк експорту
+    return url;
   }
   const matchDoc = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
   if (!matchDoc) return url;
@@ -109,7 +111,6 @@ function getDirectCsvUrl(url) {
   return `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
 }
 
-// Парсинг CSV рядків з підтримкою цитат та крапок з комою
 function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
   return lines.map(line => {
@@ -132,12 +133,9 @@ function parseCSV(text) {
   });
 }
 
-// Сховище розпарсеного розкладу
-// Структура: db[regionSlug][day][queue] = [{start, end, status}]
 let dbSchedules = {};
-let lastSyncTime = null;
+let tableUpdatedTimestamp = null;
 
-// Словник зіставлення назв областей у таблиці з селектором на сайті
 function matchRegionSlug(text) {
   const t = text.toLowerCase();
   if (t.includes('полтав')) return 'poltavska-oblast';
@@ -157,10 +155,7 @@ function matchRegionSlug(text) {
 
 async function syncGoogleSheets() {
   const csvUrl = getDirectCsvUrl(GOOGLE_SHEET_URL);
-  if (!csvUrl) {
-    console.warn('[Google Sheets] GOOGLE_SHEET_URL не встановлено');
-    return;
-  }
+  if (!csvUrl) return;
 
   try {
     const response = await axios.get(csvUrl, { timeout: 15000 });
@@ -168,28 +163,39 @@ async function syncGoogleSheets() {
 
     if (!rows || rows.length < 2) return;
 
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const rowStr = rows[i].join(' ');
+      if (rowStr.toLowerCase().includes('останнє') || rowStr.toLowerCase().includes('оновлення')) {
+        for (const cell of rows[i]) {
+          const timeMatch = cell.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
+          if (timeMatch && !cell.toLowerCase().includes('останнє')) {
+            tableUpdatedTimestamp = cell.trim();
+            break;
+          }
+        }
+      }
+      if (tableUpdatedTimestamp) break;
+    }
+
     const newDb = {};
 
-    // Проходимо по рядках (починаючи з 4-го рядка, пропускаючи заголовки)
     for (const row of rows) {
       if (row.length < 5) continue;
 
-      const rawRegion = row[0] || '';   // Колонка A (Область)
-      const rawPeriod = row[1] || '';   // Колонка B (Сьогодні / Завтра)
-      const rawQueue = row[3] || '';    // Колонка D (Черга 1.1 - 6.2)
-      const rawSchedule = row[4] || ''; // Колонка E (Повний графік зі статусами)
+      const rawRegion = row[0] || '';
+      const rawPeriod = row[1] || '';
+      const rawQueue = row[3] || '';
+      const rawSchedule = row[4] || '';
 
       const regSlug = matchRegionSlug(rawRegion);
       if (!regSlug) continue;
 
       const dayKey = rawPeriod.toLowerCase().includes('завтра') ? 'tomorrow' : 'today';
 
-      // Витягуємо номер черги "3.2" з "Черга 3.2"
       const qMatch = rawQueue.match(/([1-6]\.[1-2])/);
       if (!qMatch) continue;
       const queueKey = qMatch[1];
 
-      // Парсимо графік: "00:00 – 17:30 [Є]; 17:30 – 20:00 [НЕМАЄ]; 23:30 – 24:00 [НЕМАЄ]"
       const slots = [];
       const parts = rawSchedule.split(';');
 
@@ -220,19 +226,15 @@ async function syncGoogleSheets() {
     }
 
     dbSchedules = newDb;
-    lastSyncTime = new Date().toISOString();
-    console.log(`[Google Sheets] Успішно оновлено базу о ${new Date().toLocaleTimeString('uk-UA')}`);
+    console.log(`[Google Sheets] Базу оновлено з таблиці. Час таблиці: ${tableUpdatedTimestamp}`);
   } catch (err) {
     console.error('[Google Sheets] Помилка синхронізації:', err.message);
   }
 }
 
-// Автоматичне оновлення кожні 30 хвилин
 setInterval(syncGoogleSheets, 30 * 60 * 1000);
-// Перше оновлення одразу після старту
 syncGoogleSheets();
 
-// Ендпоінт статусу для сайту
 app.get('/api/status', (req, res) => {
   const region = req.query.region || 'poltavska-oblast';
   const queue = (req.query.queue || '3.2').replace('-', '.');
@@ -248,11 +250,11 @@ app.get('/api/status', (req, res) => {
     day,
     slots,
     sourceUrl: GOOGLE_SHEET_URL,
-    lastUpdated: lastSyncTime || new Date().toISOString()
+    sheetUpdatedTime: tableUpdatedTimestamp || '',
+    lastUpdated: new Date().toISOString()
   });
 });
 
-// Пресети
 app.get('/api/presets', (req, res) => {
   res.json(getPresets());
 });
@@ -285,7 +287,6 @@ app.post('/api/admin/presets', (req, res) => {
   }
 });
 
-// Відгуки
 app.post('/api/feedback', (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !message) {

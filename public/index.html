@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>LightNet — Монітор світла</title>
   <style>
     :root {
@@ -25,6 +25,7 @@
       color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       height: 100vh;
+      height: 100dvh;
       width: 100vw;
       overflow: hidden;
       position: relative;
@@ -34,15 +35,13 @@
 
     .bg-media-container {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       z-index: 0;
       overflow: hidden;
       pointer-events: none;
-      will-change: transform;
-      transform: translateZ(0);
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
     }
 
     .bg-media-container img,
@@ -51,22 +50,19 @@
       height: 100%;
       object-fit: cover;
       display: none;
-      will-change: transform;
+      transform: translate3d(0, 0, 0);
     }
 
     .bg-overlay {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background: rgba(9, 10, 15, 0.55);
       z-index: 1;
       pointer-events: none;
       transition: background 0.3s;
     }
 
-    /* Верхня панель: область та черга */
     .top-drawer-container {
       position: absolute;
       top: 0;
@@ -191,7 +187,6 @@
       color: #fff;
     }
 
-    /* Центральний таймер */
     .main-stage {
       position: absolute;
       top: var(--vertical-pos);
@@ -207,24 +202,23 @@
       pointer-events: none;
       z-index: 10;
       transition: top 0.15s ease-out;
-      will-change: transform;
     }
 
     .status-caption {
-      font-size: calc(clamp(0.9rem, 3.5vw, 1.2rem) * var(--timer-scale));
+      font-size: calc(clamp(0.85rem, 3.2vw, 1.2rem) * var(--timer-scale));
       letter-spacing: 3px;
       text-transform: uppercase;
       font-weight: 600;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       color: var(--text-muted);
       transition: color 0.2s;
     }
 
     .main-timer {
-      font-size: calc(clamp(2.8rem, 12vw, 9.5rem) * var(--timer-scale));
+      font-size: calc(clamp(2.7rem, 11.5vw, 9.5rem) * var(--timer-scale));
       font-weight: 800;
       font-variant-numeric: tabular-nums;
-      letter-spacing: 3px;
+      letter-spacing: 2.5px;
       line-height: 1;
       color: var(--red);
       filter: drop-shadow(0 0 var(--glow-radius) var(--red));
@@ -239,6 +233,7 @@
 
     .main-timer.no-glow {
       filter: none !important;
+      text-shadow: none !important;
     }
 
     .main-timer.loading {
@@ -262,14 +257,13 @@
     }
 
     .next-slot-hint {
-      margin-top: 16px;
-      font-size: calc(clamp(0.85rem, 3vw, 1.15rem) * var(--timer-scale));
+      margin-top: 14px;
+      font-size: calc(clamp(0.82rem, 3vw, 1.15rem) * var(--timer-scale));
       color: #e2e8f0;
       letter-spacing: 0.5px;
       transition: color 0.2s;
     }
 
-    /* Права панель графіка */
     .drawer-container {
       position: absolute;
       top: 0;
@@ -336,11 +330,16 @@
 
     .close-sheet-btn {
       display: none;
-      background: transparent;
-      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border);
       color: #cbd5e1;
-      font-size: 1.2rem;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.1rem;
       cursor: pointer;
+      align-items: center;
+      justify-content: center;
     }
 
     .tabs-wrap {
@@ -376,7 +375,6 @@
       overflow-y: auto;
       flex: 1;
       padding-right: 4px;
-      position: relative;
     }
 
     .hours-strip::-webkit-scrollbar { width: 4px; }
@@ -468,7 +466,6 @@
       border: 1px solid rgba(255, 71, 87, 0.35);
     }
 
-    /* Нижня панель "ФОН ТА СТИЛЬ" */
     .bottom-bg-drawer {
       position: absolute;
       bottom: 0;
@@ -701,11 +698,6 @@
       text-overflow: ellipsis;
     }
 
-    .theme-card:hover {
-      border-color: #2ed573;
-      transform: translateY(-2px);
-    }
-
     .user-slot-tools {
       position: absolute;
       top: 4px;
@@ -716,29 +708,21 @@
     }
 
     .slot-mini-btn {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 4px;
       background: rgba(0,0,0,0.65);
       border: 1px solid rgba(255,255,255,0.25);
       color: #fff;
-      font-size: 10px;
+      font-size: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.15s;
     }
 
-    .slot-mini-btn:hover {
-      background: rgba(46, 213, 115, 0.8);
-      border-color: #2ed573;
-    }
-
-    .slot-mini-btn.del:hover {
-      background: rgba(255, 71, 87, 0.8);
-      border-color: #ff4757;
-    }
+    .slot-mini-btn:hover { background: rgba(46, 213, 115, 0.8); border-color: #2ed573; }
+    .slot-mini-btn.del:hover { background: rgba(255, 71, 87, 0.8); border-color: #ff4757; }
 
     .btn-file-upload {
       background: rgba(255, 255, 255, 0.08);
@@ -758,8 +742,6 @@
       transition: background 0.2s;
     }
 
-    .btn-file-upload:hover { background: rgba(255, 255, 255, 0.15); }
-
     .bottom-actions-row {
       display: flex;
       justify-content: space-between;
@@ -776,9 +758,6 @@
       text-decoration: underline;
     }
 
-    .btn-sub:hover { color: #fff; }
-
-    /* Лівий нижній кут */
     .bottom-left-bar {
       position: absolute;
       bottom: 24px;
@@ -792,7 +771,7 @@
     .update-status-pill {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 8px;
       background: rgba(22, 27, 34, 0.65);
       border: 1px solid var(--border);
       backdrop-filter: blur(14px);
@@ -840,13 +819,7 @@
       font-size: 0.88rem;
       color: #ced6e0;
       cursor: pointer;
-      transition: all 0.2s;
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-
-    .feedback-pill-btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-      color: #fff;
     }
 
     .modal-overlay {
@@ -858,15 +831,18 @@
       display: none;
       align-items: center;
       justify-content: center;
+      padding: 16px;
     }
 
     .modal-box {
       background: #161b24;
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 24px 28px;
-      width: 90%;
+      padding: 24px 26px;
+      width: 100%;
       max-width: 460px;
+      max-height: 85vh;
+      overflow-y: auto;
       box-shadow: 0 20px 50px rgba(0,0,0,0.8);
       color: #f1f2f6;
     }
@@ -876,20 +852,18 @@
       border: 1px solid var(--border);
       color: #fff;
       cursor: pointer;
-      transition: background 0.2s;
+      padding: 7px 14px;
+      border-radius: 8px;
     }
-    .btn-action:hover { background: rgba(255, 255, 255, 0.16); }
 
     .mobile-dock-nav {
       display: none;
     }
 
-    /* --- АДАПТИВНІСТЬ ПІД СМАРТФОНИ ТА ПРИСКОРЕННЯ GPU --- */
     @media (max-width: 768px) {
-      /* Полегшений неон без просідання FPS */
       .main-timer {
         filter: none !important;
-        text-shadow: 0 0 14px currentColor;
+        text-shadow: 0 0 12px currentColor;
       }
       .main-timer.no-glow {
         text-shadow: none !important;
@@ -914,7 +888,7 @@
       }
 
       .pill-select {
-        font-size: 0.78rem;
+        font-size: 0.76rem;
         padding-right: 12px;
         width: 100%;
       }
@@ -925,8 +899,9 @@
         padding: 8px;
         border-radius: 50%;
       }
-
       #fsText { display: none; }
+
+      .feedback-pill-btn { display: none; }
 
       .bottom-left-bar {
         left: 14px;
@@ -934,103 +909,114 @@
         gap: 8px;
       }
 
-      .feedback-pill-btn {
-        display: none;
-      }
-
       .update-status-pill {
-        padding: 6px 12px;
-        font-size: 0.78rem;
+        padding: 5px 12px;
+        font-size: 0.74rem;
       }
 
-      /* ПОВНІСТЮ ПРИХОВАНО БІЧНУ СМУГУ "ГРАФІК" НА МОБІЛЬНИХ */
+      .drawer-handle { display: none !important; }
+
       .drawer-container {
         top: auto;
         bottom: 0;
         left: 0;
         right: 0;
         width: 100%;
-        height: 75vh;
-        transform: translateY(100%);
+        height: 82vh;
+        height: 82dvh;
+        transform: translateY(105%);
         flex-direction: column;
-        border-radius: 20px 20px 0 0;
+        border-radius: 24px 24px 0 0;
+        transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
       }
 
       .drawer-container.open {
         transform: translateY(0);
       }
 
-      .drawer-handle {
-        display: none !important;
-      }
-
       .schedule-panel {
         width: 100%;
         border-left: none;
         border-top: 1px solid var(--border);
-        border-radius: 20px 20px 0 0;
+        border-radius: 24px 24px 0 0;
+        padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
       }
 
-      .close-sheet-btn { display: block; }
+      .close-sheet-btn { display: flex; }
 
-      /* Шторка налаштувань на телефонах */
+      .bottom-drawer-handle { display: none !important; }
+
       .bottom-bg-drawer {
         right: 0;
         left: 0;
         width: 100%;
-        transform: translateY(100%);
+        transform: translateY(105%);
+        transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
       }
 
       .bottom-bg-drawer.open {
         transform: translateY(0);
       }
 
-      .bottom-drawer-handle {
-        display: none !important;
-      }
-
       .bg-controls-panel {
         width: 100%;
-        border-radius: 20px 20px 0 0;
-        max-height: 80vh;
-        padding: 18px 20px 30px;
+        border-radius: 24px 24px 0 0;
+        max-height: 82vh;
+        max-height: 82dvh;
+        padding: 18px 16px calc(30px + env(safe-area-inset-bottom));
       }
 
-      /* Нижній мобільний бар */
+      .theme-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .theme-card {
+        height: 64px;
+        padding: 5px 6px;
+      }
+
+      .theme-card span {
+        font-size: 0.68rem;
+      }
+
+      input[type=range] {
+        width: 140px;
+      }
+
       .mobile-dock-nav {
         position: absolute;
-        bottom: 12px;
+        bottom: calc(10px + env(safe-area-inset-bottom));
         left: 14px;
         right: 14px;
-        height: 52px;
+        height: 50px;
         background: rgba(20, 24, 33, 0.92);
         backdrop-filter: blur(20px);
         border: 1px solid var(--border);
-        border-radius: 26px;
+        border-radius: 25px;
         display: flex;
         align-items: center;
         justify-content: space-around;
         z-index: 35;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
       }
 
       .dock-btn {
         background: transparent;
         border: none;
         color: #cbd5e1;
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         font-weight: 600;
         display: flex;
         align-items: center;
         gap: 6px;
         cursor: pointer;
-        padding: 8px 12px;
-        border-radius: 16px;
-        transition: all 0.2s;
+        padding: 8px 14px;
+        border-radius: 18px;
       }
 
       .dock-btn:active {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.12);
         color: #fff;
       }
     }
@@ -1038,14 +1024,12 @@
 </head>
 <body>
 
-  <!-- Фон -->
   <div class="bg-media-container">
     <img id="bgImage" alt="Фон" />
-    <video id="bgVideo" autoplay loop muted playsinline></video>
+    <video id="bgVideo" autoplay loop muted playsinline webkit-playsinline preload="auto"></video>
   </div>
   <div class="bg-overlay" id="bgOverlay"></div>
 
-  <!-- Верхня панель: Область та Черга -->
   <div class="top-drawer-container" id="topDrawer">
     <div class="controls-meta">
       <div class="pill-select-wrapper">
@@ -1094,7 +1078,6 @@
     </div>
   </div>
 
-  <!-- Кнопка повного екрана -->
   <button id="fullscreenBtn" class="fullscreen-btn" title="На весь екран">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
       <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -1102,14 +1085,12 @@
     <span id="fsText">На весь екран</span>
   </button>
 
-  <!-- Центральний таймер -->
   <main class="main-stage">
     <div class="status-caption" id="caption">ПІДКЛЮЧЕННЯ...</div>
     <div class="main-timer loading" id="timer">ЗАВАНТАЖЕННЯ...</div>
     <div class="next-slot-hint" id="hint">Отримуємо актуальний розклад з сервера</div>
   </main>
 
-  <!-- Права панель графіка -->
   <div class="drawer-container" id="scheduleDrawer">
     <div class="drawer-handle" id="scheduleHandle">
       <span>ГРАФІК</span>
@@ -1127,7 +1108,6 @@
     </aside>
   </div>
 
-  <!-- Нижня панель "ФОН ТА СТИЛЬ" -->
   <div class="bottom-bg-drawer" id="bgDrawer">
     <div class="bottom-drawer-handle" id="bgDrawerHandle">
       <span>ФОН ТА СТИЛЬ ▲</span>
@@ -1135,7 +1115,7 @@
     <div class="bg-controls-panel">
       <div class="card-top-title-row">
         <div class="card-top-title">Фон та стиль</div>
-        <button class="close-sheet-btn" id="closeBgBtn" style="display: block;">✕</button>
+        <button class="close-sheet-btn" id="closeBgBtn" style="display: flex;">✕</button>
       </div>
 
       <div style="display: flex; justify-content: flex-end;">
@@ -1189,39 +1169,37 @@
         </label>
       </div>
 
-      <!-- Пресетні теми -->
       <div class="themes-title-row">
         <span class="theme-header-txt">Обрані фони (Пресетні)</span>
       </div>
       <div class="theme-grid" id="presetThemeGrid"></div>
 
-      <!-- 3 Власні теми користувача -->
       <div class="themes-title-row" style="margin-top: 6px;">
         <span class="theme-header-txt">Мої власні теми (3 слоти)</span>
       </div>
       <div class="theme-grid" id="userThemeGrid">
-        <div class="theme-card" id="slotCard1" title="Натисніть для застосування">
+        <div class="theme-card" id="slotCard1">
           <img id="slotThumb1" style="display:none;" />
           <div class="user-slot-tools">
-            <button class="slot-mini-btn" id="slotSave1" title="Зберегти поточний фон і стиль">💾</button>
+            <button class="slot-mini-btn" id="slotSave1" title="Зберегти">💾</button>
             <button class="slot-mini-btn del" id="slotDel1" title="Очистити" style="display:none;">✕</button>
           </div>
           <span id="slotLabel1">Слот 1</span>
         </div>
 
-        <div class="theme-card" id="slotCard2" title="Натисніть для застосування">
+        <div class="theme-card" id="slotCard2">
           <img id="slotThumb2" style="display:none;" />
           <div class="user-slot-tools">
-            <button class="slot-mini-btn" id="slotSave2" title="Зберегти поточний фон і стиль">💾</button>
+            <button class="slot-mini-btn" id="slotSave2" title="Зберегти">💾</button>
             <button class="slot-mini-btn del" id="slotDel2" title="Очистити" style="display:none;">✕</button>
           </div>
           <span id="slotLabel2">Слот 2</span>
         </div>
 
-        <div class="theme-card" id="slotCard3" title="Натисніть для застосування">
+        <div class="theme-card" id="slotCard3">
           <img id="slotThumb3" style="display:none;" />
           <div class="user-slot-tools">
-            <button class="slot-mini-btn" id="slotSave3" title="Зберегти поточний фон і стиль">💾</button>
+            <button class="slot-mini-btn" id="slotSave3" title="Зберегти">💾</button>
             <button class="slot-mini-btn del" id="slotDel3" title="Очистити" style="display:none;">✕</button>
           </div>
           <span id="slotLabel3">Слот 3</span>
@@ -1242,7 +1220,6 @@
     </div>
   </div>
 
-  <!-- Лівий нижній кут -->
   <div class="bottom-left-bar">
     <div class="update-status-pill">
       <div class="waveform-icon">
@@ -1253,7 +1230,7 @@
       </div>
       <span id="updateStatusText">Оновлено: --:--</span>
       <span>•</span>
-      <a id="externalSourceLink" href="https://bezsvitla.com.ua/poltavska-oblast" target="_blank" style="color: #8391a5; text-decoration: none;">bezsvitla</a>
+      <a id="externalSourceLink" href="#" target="_blank" style="color: #8391a5; text-decoration: none;">Таблиця розкладу</a>
     </div>
 
     <button class="feedback-pill-btn" id="openModalBtn">
@@ -1264,7 +1241,6 @@
     </button>
   </div>
 
-  <!-- Нижня панель для мобільних телефонів (Mobile Dock) -->
   <nav class="mobile-dock-nav">
     <button class="dock-btn" id="dockScheduleBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1292,9 +1268,8 @@
     </button>
   </nav>
 
-  <!-- Модальне вікно "Про проєкт / Відгук" -->
   <div class="modal-overlay" id="aboutModal">
-    <div class="modal-box" style="max-height: 90vh; overflow-y: auto;">
+    <div class="modal-box">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <h3 style="margin: 0; font-size: 1.25rem;">Про проєкт LightNet</h3>
         <span style="background: rgba(46, 213, 115, 0.15); color: #2ed573; border: 1px solid rgba(46, 213, 115, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 700;">v1.0 • Ітерація 1</span>
@@ -1326,7 +1301,7 @@
         <div id="fbStatus" style="font-size: 0.82rem; min-height: 18px;"></div>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
-          <button type="button" class="btn-action" id="closeModalBtn" style="padding: 7px 14px; border-radius: 8px;">Закрити</button>
+          <button type="button" class="btn-action" id="closeModalBtn">Закрити</button>
           <button type="submit" id="fbSubmitBtn" style="background: #2ed573; border: none; color: #090a0f; font-weight: 700; padding: 7px 16px; border-radius: 8px; cursor: pointer;">Надіслати</button>
         </div>
       </form>
@@ -1338,7 +1313,10 @@
     let schedule = [];
     let isLoading = false;
 
-    // --- INDEXEDDB ДЛЯ ВЛАСНИХ МЕДІА ---
+    function isMobile() {
+      return window.innerWidth <= 768;
+    }
+
     const DB_NAME = 'LightNetMediaDB';
     const DB_STORE = 'backgrounds';
 
@@ -1420,7 +1398,6 @@
     const queueSelect = document.getElementById('queueSelect');
     const tabToday = document.getElementById('tabToday');
     const tabTomorrow = document.getElementById('tabTomorrow');
-    const sourceLink = document.getElementById('externalSourceLink');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const fsText = document.getElementById('fsText');
 
@@ -1439,7 +1416,6 @@
     const bgOverlay = document.getElementById('bgOverlay');
     const timerEl = document.getElementById('timer');
 
-    // Керування шторками та мобільними панелями
     const topDrawer = document.getElementById('topDrawer');
     const scheduleDrawer = document.getElementById('scheduleDrawer');
     const bgDrawer = document.getElementById('bgDrawer');
@@ -1450,7 +1426,6 @@
     document.getElementById('bgDrawerHandle').onclick = () => bgDrawer.classList.toggle('open');
     document.getElementById('closeBgBtn').onclick = () => bgDrawer.classList.remove('open');
 
-    // Кнопки мобільного доку
     document.getElementById('dockScheduleBtn').onclick = () => {
       bgDrawer.classList.remove('open');
       scheduleDrawer.classList.toggle('open');
@@ -1557,8 +1532,11 @@
         applyMediaBackground(currentObjectUrl, data.type);
       } else {
         const savedUrl = localStorage.getItem('preset_bg_url') || '/totoro.mp4';
+        const savedMobileUrl = localStorage.getItem('preset_bg_mobile_url') || '';
         const savedType = localStorage.getItem('preset_bg_type') || 'video';
-        applyMediaBackground(savedUrl, savedType);
+
+        const finalUrl = (isMobile() && savedMobileUrl) ? savedMobileUrl : savedUrl;
+        applyMediaBackground(finalUrl, savedType);
       }
     });
 
@@ -1575,7 +1553,9 @@
     function applyMediaBackground(src, type) {
       if (type === 'video') {
         bgImage.style.display = 'none';
-        bgVideo.src = src;
+        if (bgVideo.src !== location.origin + src && bgVideo.src !== src) {
+          bgVideo.src = src;
+        }
         bgVideo.style.display = 'block';
         bgVideo.play().catch(() => {});
       } else {
@@ -1586,7 +1566,6 @@
       }
     }
 
-    // Завантаження глобальних пресетів із сервера
     async function loadGlobalPresets() {
       const grid = document.getElementById('presetThemeGrid');
       if (!grid) return;
@@ -1596,13 +1575,15 @@
         const list = await res.json();
 
         grid.innerHTML = list.map(item => {
+          const effectiveUrl = (isMobile() && item.mobileUrl) ? item.mobileUrl : item.url;
           const mediaHtml = item.type === 'video'
-            ? `<video src="${item.url}" autoplay loop muted playsinline></video>`
-            : `<img src="${item.url}" alt="${item.name}" />`;
+            ? `<video src="${effectiveUrl}" autoplay loop muted playsinline webkit-playsinline preload="metadata"></video>`
+            : `<img src="${effectiveUrl}" alt="${item.name}" />`;
 
           return `
             <div class="theme-card"
                  data-url="${item.url}"
+                 data-mobile-url="${item.mobileUrl || ''}"
                  data-type="${item.type || 'image'}"
                  data-text-color="${item.textColor || '#a4b0be'}"
                  data-green-color="${item.greenColor || '#2ed573'}"
@@ -1622,6 +1603,7 @@
         grid.querySelectorAll('.theme-card').forEach(card => {
           card.onclick = () => {
             const url = card.getAttribute('data-url');
+            const mobileUrl = card.getAttribute('data-mobile-url');
             const type = card.getAttribute('data-type') || 'image';
 
             const textColor = card.getAttribute('data-text-color');
@@ -1659,19 +1641,19 @@
             applyStyles();
 
             localStorage.setItem('preset_bg_url', url);
+            localStorage.setItem('preset_bg_mobile_url', mobileUrl);
             localStorage.setItem('preset_bg_type', type);
             clearMediaBlob();
-            applyMediaBackground(url, type);
+
+            const finalUrl = (isMobile() && mobileUrl) ? mobileUrl : url;
+            applyMediaBackground(finalUrl, type);
           };
         });
-      } catch (err) {
-        console.warn('Не вдалося завантажити пресети з сервера', err);
-      }
+      } catch (err) {}
     }
 
     loadGlobalPresets();
 
-    // 3 власні теми користувача
     function setupUserTile(slotNum) {
       const card = document.getElementById(`slotCard${slotNum}`);
       const thumb = document.getElementById(`slotThumb${slotNum}`);
@@ -1724,9 +1706,11 @@
           applyMediaBackground(currentObjectUrl, slotMedia.type);
         } else if (config.presetUrl) {
           localStorage.setItem('preset_bg_url', config.presetUrl);
+          localStorage.setItem('preset_bg_mobile_url', config.presetMobileUrl || '');
           localStorage.setItem('preset_bg_type', config.presetType || 'image');
           clearMediaBlob('saved_media_file');
-          applyMediaBackground(config.presetUrl, config.presetType || 'image');
+          const finalUrl = (isMobile() && config.presetMobileUrl) ? config.presetMobileUrl : config.presetUrl;
+          applyMediaBackground(finalUrl, config.presetType || 'image');
         }
       };
 
@@ -1742,6 +1726,7 @@
           glow: glowCheckbox.checked,
           radius: glowRadiusRange.value,
           presetUrl: localStorage.getItem('preset_bg_url') || '',
+          presetMobileUrl: localStorage.getItem('preset_bg_mobile_url') || '',
           presetType: localStorage.getItem('preset_bg_type') || 'image'
         };
         localStorage.setItem(`custom_slot_${slotNum}_cfg`, JSON.stringify(config));
@@ -1775,7 +1760,6 @@
     setupUserTile(2);
     setupUserTile(3);
 
-    // Відправка форми відгуку
     const feedbackForm = document.getElementById('feedbackForm');
     const fbStatus = document.getElementById('fbStatus');
     const fbSubmitBtn = document.getElementById('fbSubmitBtn');
@@ -1829,11 +1813,6 @@
     if (localStorage.getItem('saved_region')) regionSelect.value = localStorage.getItem('saved_region');
     if (localStorage.getItem('saved_queue')) queueSelect.value = localStorage.getItem('saved_queue');
 
-    function updateSourceLink() {
-      sourceLink.href = `https://bezsvitla.com.ua/${regionSelect.value}`;
-    }
-    updateSourceLink();
-
     fullscreenBtn.onclick = () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -1864,7 +1843,6 @@
 
     regionSelect.onchange = () => {
       localStorage.setItem('saved_region', regionSelect.value);
-      updateSourceLink();
       loadSchedule();
     };
 
@@ -1885,26 +1863,25 @@
       const regionVal = regionSelect.value;
 
       document.getElementById('caption').textContent = `СИНХРОНІЗАЦІЯ • ${dayTitle}`;
-      
-      // Якщо в пам'яті ще немає графіка взагалі, показуємо статус, інакше просто тихо оновлюємо
-      if (!schedule || schedule.length === 0) {
-        timerEl.className = 'main-timer loading';
-        timerEl.textContent = 'ОТРИМАННЯ...';
-        document.getElementById('hint').textContent = `Завантажуємо актуальний графік...`;
-      }
 
       try {
         const res = await fetch(`/api/status?region=${regionVal}&queue=${queueVal}&day=${currentDay}`);
         const data = await res.json();
         schedule = data.slots || [];
 
-        if (data.lastUpdated) {
-          const t = new Date(data.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (data.sourceUrl) {
+          document.getElementById('externalSourceLink').href = data.sourceUrl;
+        }
+
+        if (data.sheetUpdatedTime) {
+          document.getElementById('updateStatusText').textContent = `Оновлено: ${data.sheetUpdatedTime}`;
+        } else if (data.lastUpdated) {
+          const t = new Date(data.lastUpdated).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
           document.getElementById('updateStatusText').textContent = `Оновлено: ${t}`;
         }
       } catch (e) {
         schedule = [];
-        document.getElementById('updateStatusText').textContent = 'Автономний режим';
+        document.getElementById('updateStatusText').textContent = 'Помилка мережі';
       } finally {
         isLoading = false;
         renderScheduleList();
@@ -2077,7 +2054,7 @@
     }
 
     loadSchedule();
-    setInterval(loadSchedule, 5 * 60 * 1000); // тихе оновлення кожні 5 хвилин
+    setInterval(loadSchedule, 5 * 60 * 1000);
     setInterval(tick, 1000);
   </script>
 </body>

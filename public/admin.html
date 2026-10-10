@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LightNet — Візуальна адмін-панель</title>
+  <title>LightNet — Адмін-панель</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -64,7 +64,7 @@
 
     .main-grid {
       display: grid;
-      grid-template-columns: 420px 1fr;
+      grid-template-columns: 440px 1fr;
       gap: 24px;
     }
 
@@ -79,7 +79,7 @@
       padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 15px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
@@ -174,6 +174,16 @@
       gap: 12px;
     }
 
+    .monitor-screen-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
     .monitor-screen {
       position: relative;
       width: 100%;
@@ -183,6 +193,7 @@
       overflow: hidden;
       border: 2px solid rgba(255, 255, 255, 0.15);
       box-shadow: 0 15px 45px rgba(0,0,0,0.7);
+      transition: all 0.3s;
     }
 
     .preview-bg-media {
@@ -246,7 +257,6 @@
 
 <div class="admin-wrapper">
 
-  <!-- Екран авторизації -->
   <div id="loginSection" class="login-box">
     <h2 style="font-size: 1.25rem;">Вхід в адмін-панель</h2>
     <p style="color: #8391a5; font-size: 0.85rem;">Введіть захисний пароль адміністратора</p>
@@ -255,15 +265,13 @@
     <div class="status-msg err" id="loginError"></div>
   </div>
 
-  <!-- Робочий інтерфейс з живим прев'ю -->
   <div id="contentSection" style="display: none; flex-direction: column; gap: 18px;">
     
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h2 style="font-size: 1.3rem;">Налаштування глобальних тем (Live Preview)</h2>
+      <h2 style="font-size: 1.3rem;">Налаштування тем (ПК та Мобільні)</h2>
       <button class="btn" id="saveAllBtn">Зберегти всі зміни для всіх</button>
     </div>
 
-    <!-- Вкладки пресетів -->
     <div style="display: flex; gap: 10px; align-items: center;">
       <div class="preset-tabs" id="presetTabsContainer"></div>
       <button class="btn" id="addPresetBtn" style="background: rgba(46, 213, 115, 0.15); color: #2ed573; border: 1px solid rgba(46, 213, 115, 0.3); font-size: 0.85rem; padding: 6px 12px;">+ Новий</button>
@@ -271,7 +279,6 @@
     </div>
 
     <div class="main-grid">
-      <!-- Ліва колонка: Інтерактивні контролери -->
       <div class="card-panel">
         
         <div class="ctrl-row">
@@ -280,8 +287,13 @@
         </div>
 
         <div class="ctrl-row">
-          <label>URL відео/фото (/totoro.mp4, /emerald-rain.mp4 або зовнішнє посилання)</label>
-          <input type="text" id="inpUrl" />
+          <label>URL відео/фото для комп'ютера (Десктоп)</label>
+          <input type="text" id="inpUrl" placeholder="/totoro.mp4" />
+        </div>
+
+        <div class="ctrl-row">
+          <label>URL відео/фото для телефона (Мобільний 720p / 9:16)</label>
+          <input type="text" id="inpMobileUrl" placeholder="/totoro-mobile.mp4 (якщо порожньо — береться загальний)" />
         </div>
 
         <div class="ctrl-row">
@@ -348,29 +360,32 @@
         <div class="status-msg" id="statusMsg"></div>
       </div>
 
-      <!-- Права колонка: Живий попередній перегляд -->
       <div class="preview-container">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">ЖИВИЙ ПЕРЕГЛЯД (16:9)</span>
+          <div style="display: flex; gap: 8px;">
+            <button id="viewScreenPc" class="btn" style="padding: 5px 12px; font-size: 0.78rem;">ПК (16:9)</button>
+            <button id="viewScreenMobile" class="btn" style="padding: 5px 12px; font-size: 0.78rem; background: rgba(255,255,255,0.15); color: #fff;">Телефон (9:16)</button>
+          </div>
           <div style="display: flex; gap: 8px;">
             <button id="previewModeGreen" style="background: rgba(46, 213, 115, 0.2); color:#2ed573; border: 1px solid rgba(46,213,115,0.4); border-radius:6px; padding:4px 8px; font-size:0.75rem; cursor:pointer;">Режим "Світло є"</button>
             <button id="previewModeRed" style="background: rgba(255, 71, 87, 0.2); color:#ff4757; border: 1px solid rgba(255,71,87,0.4); border-radius:6px; padding:4px 8px; font-size:0.75rem; cursor:pointer;">Режим "Відключення"</button>
           </div>
         </div>
 
-        <div class="monitor-screen">
-          <img id="prevImg" class="preview-bg-media" style="display:none;" />
-          <video id="prevVideo" class="preview-bg-media" autoplay loop muted playsinline style="display:none;"></video>
-          <div id="prevOverlay" class="preview-overlay"></div>
+        <div class="monitor-screen-wrapper">
+          <div class="monitor-screen" id="monitorScreen">
+            <img id="prevImg" class="preview-bg-media" style="display:none;" />
+            <video id="prevVideo" class="preview-bg-media" autoplay loop muted playsinline style="display:none;"></video>
+            <div id="prevOverlay" class="preview-overlay"></div>
 
-          <div id="prevStage" class="preview-stage">
-            <div id="prevCaption" class="preview-caption">ДО ВІДКЛЮЧЕННЯ СВІТЛА</div>
-            <div id="prevTimer" class="preview-timer">01:38:10</div>
-            <div id="prevHint" class="preview-hint">Період без світла: 22:30 — 23:59</div>
+            <div id="prevStage" class="preview-stage">
+              <div id="prevCaption" class="preview-caption">ДО ВІДКЛЮЧЕННЯ СВІТЛА</div>
+              <div id="prevTimer" class="preview-timer">01:38:10</div>
+              <div id="prevHint" class="preview-hint">Період без світла: 22:30 — 23:59</div>
+            </div>
           </div>
         </div>
 
-        <!-- Блок перегляду відгуків -->
         <div style="background: #141722; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; margin-top: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <span style="font-size: 0.9rem; font-weight: 700; color: #fff;">Отримані відгуки від користувачів</span>
@@ -390,6 +405,7 @@
   let currentPassword = '';
   let activeIndex = 0;
   let previewState = 'red';
+  let isMobilePreview = false;
 
   const loginSection = document.getElementById('loginSection');
   const contentSection = document.getElementById('contentSection');
@@ -397,6 +413,7 @@
 
   const inpName = document.getElementById('inpName');
   const inpUrl = document.getElementById('inpUrl');
+  const inpMobileUrl = document.getElementById('inpMobileUrl');
   const inpType = document.getElementById('inpType');
   const rangePos = document.getElementById('rangePos');
   const lblPos = document.getElementById('lblPos');
@@ -411,6 +428,7 @@
   const colGreen = document.getElementById('colGreen');
   const colRed = document.getElementById('colRed');
 
+  const monitorScreen = document.getElementById('monitorScreen');
   const prevImg = document.getElementById('prevImg');
   const prevVideo = document.getElementById('prevVideo');
   const prevOverlay = document.getElementById('prevOverlay');
@@ -463,6 +481,7 @@
     const p = presets[idx];
     inpName.value = p.name || '';
     inpUrl.value = p.url || '';
+    inpMobileUrl.value = p.mobileUrl || '';
     inpType.value = p.type || 'video';
 
     rangePos.value = p.pos ?? 50;
@@ -490,22 +509,24 @@
     const p = presets[activeIndex];
     if (!p) return;
 
+    const mediaSrc = (isMobilePreview && p.mobileUrl) ? p.mobileUrl : p.url;
+
     if (p.type === 'video') {
       prevImg.style.display = 'none';
-      if (prevVideo.src !== location.origin + p.url && prevVideo.src !== p.url) {
-        prevVideo.src = p.url;
+      if (prevVideo.src !== location.origin + mediaSrc && prevVideo.src !== mediaSrc) {
+        prevVideo.src = mediaSrc;
       }
       prevVideo.style.display = 'block';
     } else {
       prevVideo.style.display = 'none';
-      prevImg.src = p.url;
+      prevImg.src = mediaSrc;
       prevImg.style.display = 'block';
     }
 
     prevOverlay.style.background = `rgba(9, 10, 15, ${p.dim / 100})`;
     prevStage.style.top = `${p.pos}%`;
 
-    const scaleFactor = p.scale / 100;
+    const scaleFactor = (p.scale / 100) * (isMobilePreview ? 0.75 : 1);
     prevTimer.style.fontSize = `${2.8 * scaleFactor}rem`;
     prevCaption.style.fontSize = `${0.75 * scaleFactor}rem`;
     prevHint.style.fontSize = `${0.72 * scaleFactor}rem`;
@@ -522,6 +543,28 @@
       prevTimer.style.filter = 'none';
     }
   }
+
+  document.getElementById('viewScreenPc').onclick = () => {
+    isMobilePreview = false;
+    document.getElementById('viewScreenPc').style.background = '#2ed573';
+    document.getElementById('viewScreenPc').style.color = '#090a0f';
+    document.getElementById('viewScreenMobile').style.background = 'rgba(255,255,255,0.15)';
+    document.getElementById('viewScreenMobile').style.color = '#fff';
+    monitorScreen.style.aspectRatio = '16 / 9';
+    monitorScreen.style.maxWidth = '100%';
+    updatePreview();
+  };
+
+  document.getElementById('viewScreenMobile').onclick = () => {
+    isMobilePreview = true;
+    document.getElementById('viewScreenMobile').style.background = '#2ed573';
+    document.getElementById('viewScreenMobile').style.color = '#090a0f';
+    document.getElementById('viewScreenPc').style.background = 'rgba(255,255,255,0.15)';
+    document.getElementById('viewScreenPc').style.color = '#fff';
+    monitorScreen.style.aspectRatio = '9 / 16';
+    monitorScreen.style.maxWidth = '250px';
+    updatePreview();
+  };
 
   rangePos.oninput = () => {
     presets[activeIndex].pos = Number(rangePos.value);
@@ -575,6 +618,11 @@
     updatePreview();
   };
 
+  inpMobileUrl.onchange = () => {
+    presets[activeIndex].mobileUrl = inpMobileUrl.value;
+    updatePreview();
+  };
+
   inpType.onchange = () => {
     presets[activeIndex].type = inpType.value;
     updatePreview();
@@ -595,6 +643,7 @@
     presets.push({
       name: 'Нова тема',
       url: '/totoro.mp4',
+      mobileUrl: '/totoro-mobile.mp4',
       type: 'video',
       textColor: '#a4b0be',
       greenColor: '#2ed573',
