@@ -21,7 +21,7 @@ const DEFAULT_PRESETS = [
     id: 'totoro',
     name: 'Тоторо (Живий)',
     url: '/totoro.mp4',
-    mobileUrl: '/totoro.mp4',
+    mobileUrl: '',
     type: 'video',
     textColor: '#f6a090',
     greenColor: '#48dbfb',
@@ -36,7 +36,7 @@ const DEFAULT_PRESETS = [
     id: 'emerald',
     name: 'Смарагдовий дощ',
     url: '/emerald-rain.mp4',
-    mobileUrl: '/emerald-rain.mp4',
+    mobileUrl: '',
     type: 'video',
     textColor: '#48bb78',
     greenColor: '#38ef7d',
@@ -50,12 +50,12 @@ const DEFAULT_PRESETS = [
   {
     id: 'minimal',
     name: 'Мінімал',
-    url: 'https://gwaramedia.com/wp-content/webp-express/webp-images/uploads/2025/12/original.jpg.webp',
-    mobileUrl: 'https://gwaramedia.com/wp-content/webp-express/webp-images/uploads/2025/12/original.jpg.webp',
+    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800',
+    mobileUrl: '',
     type: 'image',
     textColor: '#a4b0be',
     greenColor: '#2ed573',
-    redColor: '#ffffff',
+    redColor: '#ff4757',
     dim: 65,
     pos: 50,
     scale: 100,
@@ -113,7 +113,7 @@ function getSettings() {
       };
     }
   } catch (e) {
-    console.error('[Settings] Помилка читання файлу налаштувань, використовуємо змінні середовища');
+    console.error('[Settings] Помилка читання файлу налаштувань, використовуємо змінні оточення');
   }
 
   return envDefaults;
@@ -126,7 +126,6 @@ function saveSettings(settings) {
 async function sendTelegramNotification(text) {
   const cfg = getSettings();
   if (!cfg.telegramEnabled || !cfg.telegramBotToken || !cfg.telegramChatId) {
-    console.log('[Telegram Notify] Сповіщення вимкнені або не заповнені токен/чат');
     return;
   }
   try {
@@ -136,7 +135,7 @@ async function sendTelegramNotification(text) {
       text: text,
       parse_mode: 'HTML'
     }, { timeout: 8000 });
-    console.log('[Telegram Notify] Сповіщення успішно надіслано в Telegram');
+    console.log('[Telegram Notify] Сповіщення надіслано в Telegram');
   } catch (err) {
     console.error('[Telegram Notify] Помилка відправки:', err.response?.data?.description || err.message);
   }
@@ -321,7 +320,10 @@ function generate24hTimeline(offSlots) {
   return timeline;
 }
 
+// Запит статусу розкладу
 app.get('/api/status', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+
   const queue = (req.query.queue || '3.2').replace('-', '.');
   const day = req.query.day || 'today';
 
@@ -338,6 +340,18 @@ app.get('/api/status', (req, res) => {
     rawSourceUrl: GOOGLE_SHEET_URL,
     lastUpdated: scheduleDb.lastUpdatedTime || new Date().toISOString()
   });
+});
+
+// Вебхук для виклику з Google Apps Script
+app.post('/api/webhook/sync', async (req, res) => {
+  try {
+    console.log('[Webhook] Отримано запит на синхронізацію з таблиці');
+    await syncSheet();
+    res.json({ success: true, message: 'Синхронізацію виконано' });
+  } catch (err) {
+    console.error('[Webhook Error]:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.get('/api/presets', (req, res) => {
@@ -390,14 +404,12 @@ app.post('/api/feedback', async (req, res) => {
   list.unshift(newFeedback);
   saveFeedbacks(list);
 
-  // Формуємо текст для Telegram
   const tgText = `⚡ <b>Новий відгук на LightNet!</b>\n\n` +
                  `👤 <b>Ім'я:</b> ${newFeedback.name}\n` +
                  `📧 <b>Email:</b> ${newFeedback.email || 'Не вказано'}\n` +
                  `💬 <b>Повідомлення:</b>\n${newFeedback.message}\n\n` +
                  `🕒 <i>${new Date().toLocaleString('uk-UA')}</i>`;
 
-  // Обов'язково очікуємо результат відправки через try/catch
   try {
     await sendTelegramNotification(tgText);
   } catch (err) {
