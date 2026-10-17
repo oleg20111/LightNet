@@ -97,20 +97,26 @@ function saveFeedbacks(feedbacks) {
 }
 
 function getSettings() {
+  const envDefaults = {
+    telegramEnabled: process.env.TELEGRAM_ENABLED === 'true' || Boolean(process.env.TELEGRAM_BOT_TOKEN),
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+    telegramChatId: process.env.TELEGRAM_CHAT_ID || ''
+  };
+
   try {
-    if (!fs.existsSync(SETTINGS_FILE)) {
-      const defaultSettings = {
-        telegramEnabled: false,
-        telegramBotToken: '',
-        telegramChatId: ''
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const fileData = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+      return {
+        telegramEnabled: fileData.telegramEnabled ?? envDefaults.telegramEnabled,
+        telegramBotToken: fileData.telegramBotToken || envDefaults.telegramBotToken,
+        telegramChatId: fileData.telegramChatId || envDefaults.telegramChatId
       };
-      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2), 'utf-8');
-      return defaultSettings;
     }
-    return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
   } catch (e) {
-    return { telegramEnabled: false, telegramBotToken: '', telegramChatId: '' };
+    console.error('[Settings] Помилка читання файлу налаштувань, використовуємо змінні середовища');
   }
+
+  return envDefaults;
 }
 
 function saveSettings(settings) {
