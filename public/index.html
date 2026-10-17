@@ -823,16 +823,15 @@
     }
 
     .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(10px);
-      z-index: 100;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(9, 10, 15, 0.88); /* щільне напівпрозоре затемнення замість важкого блюру */
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
 
     .modal-box {
       background: #161b24;
@@ -1312,6 +1311,26 @@
     let currentDay = 'today';
     let schedule = [];
     let isLoading = false;
+
+    // Відкриття модалки: показуємо вікно та ставимо фонове відео на паузу
+function openAboutModal() {
+  aboutModal.style.display = 'flex';
+  if (bgVideo && !bgVideo.paused) {
+    bgVideo.pause();
+  }
+}
+
+// Закриття модалки: ховаємо вікно і відновлюємо відтворення відео
+function closeAboutModal() {
+  aboutModal.style.display = 'none';
+  if (bgVideo && bgVideo.style.display !== 'none') {
+    bgVideo.play().catch(() => {});
+  }
+}
+
+document.getElementById('openModalBtn').onclick = openAboutModal;
+document.getElementById('dockAboutBtn').onclick = openAboutModal;
+document.getElementById('closeModalBtn').onclick = closeAboutModal;
 
     function isMobile() {
       return window.innerWidth <= 768;
