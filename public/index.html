@@ -63,6 +63,149 @@
       transition: background 0.3s;
     }
 
+    /* Фоновая шкала-линейка на 24 часа */
+    .timeline-backdrop-container {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 80px;
+      z-index: 4;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 16px 8px 16px;
+      box-sizing: border-box;
+      opacity: 0.85;
+      transition: opacity 0.3s;
+    }
+
+    .timeline-backdrop-container.hidden {
+      display: none !important;
+    }
+
+    .timeline-ruler-wrap {
+      position: relative;
+      width: 100%;
+      height: 46px;
+    }
+
+    .timeline-axis-line {
+      position: absolute;
+      bottom: 18px;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .timeline-block-off {
+      position: absolute;
+      bottom: 11px;
+      height: 26px;
+      background: rgba(20, 24, 33, 0.82);
+      border: 1.5px solid #ffa502;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      z-index: 3;
+      box-sizing: border-box;
+    }
+
+    .timeline-block-buffer {
+      position: absolute;
+      bottom: 11px;
+      height: 26px;
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(255, 165, 2, 0.12),
+        rgba(255, 165, 2, 0.12) 4px,
+        rgba(255, 165, 2, 0.28) 4px,
+        rgba(255, 165, 2, 0.28) 8px
+      );
+      border: 1px dashed rgba(255, 165, 2, 0.75);
+      border-radius: 6px;
+      z-index: 2;
+      box-sizing: border-box;
+    }
+
+    .timeline-ticks-layer {
+      position: absolute;
+      bottom: 18px;
+      left: 0;
+      width: 100%;
+      height: 14px;
+    }
+
+    .tick-mark {
+      position: absolute;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.16);
+      transform: translateX(-50%);
+    }
+    .tick-mark.m15 { height: 4px; background: rgba(255, 255, 255, 0.14); }
+    .tick-mark.m30 { height: 8px; background: rgba(255, 255, 255, 0.35); }
+    .tick-mark.hour { height: 13px; background: rgba(255, 255, 255, 0.6); }
+
+    .timeline-hours-labels {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 14px;
+    }
+
+    .hour-label {
+      position: absolute;
+      bottom: 0;
+      font-size: 0.62rem;
+      color: #8391a5;
+      font-variant-numeric: tabular-nums;
+      transform: translateX(-50%);
+    }
+
+    .timeline-now-pointer {
+      position: absolute;
+      top: 0;
+      bottom: 2px;
+      width: 2px;
+      background: #ff4757;
+      z-index: 6;
+      box-shadow: 0 0 8px rgba(255, 71, 87, 0.85);
+      transform: translateX(-50%);
+    }
+
+    .timeline-now-pointer::before {
+      content: "";
+      position: absolute;
+      top: -3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      background: #ff4757;
+      border-radius: 50%;
+    }
+
+    .timeline-now-pointer::after {
+      content: "";
+      position: absolute;
+      bottom: -3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      background: #ff4757;
+      border-radius: 50%;
+    }
+
     .top-drawer-container {
       position: absolute;
       top: 0;
@@ -772,14 +915,13 @@
       align-items: center;
       gap: 12px;
       z-index: 25;
-      transition: bottom 0.2s;
     }
 
     .update-status-pill {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(22, 27, 34, 0.65);
+      background: rgba(22, 27, 34, 0.72);
       border: 1px solid var(--border);
       backdrop-filter: blur(14px);
       padding: 7px 16px;
@@ -829,141 +971,6 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
 
-    /* Нижня 24-годинна шкала */
-    .bottom-timeline-bar {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100vw;
-      height: 60px;
-      background: rgba(14, 18, 25, 0.88);
-      backdrop-filter: blur(16px);
-      border-top: 1px solid var(--border);
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 0 16px 6px 16px;
-      box-sizing: border-box;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-
-    .bottom-timeline-bar.hidden {
-      display: none !important;
-    }
-
-    .timeline-track-wrap {
-      position: relative;
-      width: 100%;
-      height: 38px;
-    }
-
-    .timeline-base-line {
-      position: absolute;
-      bottom: 14px;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .timeline-block-off {
-      position: absolute;
-      bottom: 7px;
-      height: 24px;
-      background: rgba(255, 71, 87, 0.22);
-      border: 1px solid rgba(255, 71, 87, 0.7);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      color: #ff6b81;
-      font-size: 0.72rem;
-      font-weight: 700;
-      overflow: hidden;
-      box-sizing: border-box;
-      z-index: 2;
-    }
-
-    .timeline-block-buffer {
-      position: absolute;
-      bottom: 7px;
-      height: 24px;
-      background: repeating-linear-gradient(
-        -45deg,
-        rgba(255, 165, 2, 0.15),
-        rgba(255, 165, 2, 0.15) 4px,
-        rgba(255, 165, 2, 0.3) 4px,
-        rgba(255, 165, 2, 0.3) 8px
-      );
-      border: 1px dashed rgba(255, 165, 2, 0.8);
-      border-radius: 6px;
-      z-index: 1;
-    }
-
-    .timeline-ticks {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 14px;
-      display: flex;
-      justify-content: space-between;
-      pointer-events: none;
-    }
-
-    .timeline-tick-label {
-      font-size: 0.65rem;
-      color: #8391a5;
-      font-variant-numeric: tabular-nums;
-      transform: translateX(-50%);
-      position: absolute;
-    }
-
-    .timeline-tick-label:first-child { transform: translateX(0); }
-    .timeline-tick-label:last-child { transform: translateX(-100%); }
-
-    .timeline-current-cursor {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: #ff4757;
-      z-index: 5;
-      box-shadow: 0 0 8px #ff4757;
-      pointer-events: none;
-      transform: translateX(-50%);
-    }
-
-    .timeline-current-cursor::before {
-      content: "";
-      position: absolute;
-      top: -2px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 6px;
-      height: 6px;
-      background: #ff4757;
-      border-radius: 50%;
-    }
-
-    .timeline-current-cursor::after {
-      content: "";
-      position: absolute;
-      bottom: -2px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 6px;
-      height: 6px;
-      background: #ff4757;
-      border-radius: 50%;
-    }
-
-    body.has-timeline .bottom-left-bar {
-      bottom: 74px;
-    }
-
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -1010,6 +1017,12 @@
         text-shadow: none !important;
       }
 
+      .timeline-backdrop-container {
+        height: 72px;
+        bottom: 60px;
+        padding: 0 10px 4px 10px;
+      }
+
       .top-drawer-container {
         left: 10px;
         right: 64px;
@@ -1046,12 +1059,8 @@
 
       .bottom-left-bar {
         left: 14px;
-        bottom: 74px;
+        bottom: 66px;
         gap: 8px;
-      }
-
-      body.has-timeline .bottom-left-bar {
-        bottom: 124px;
       }
 
       .update-status-pill {
@@ -1131,24 +1140,19 @@
 
       .mobile-dock-nav {
         position: absolute;
-        bottom: calc(10px + env(safe-area-inset-bottom));
+        bottom: calc(8px + env(safe-area-inset-bottom));
         left: 14px;
         right: 14px;
-        height: 50px;
+        height: 48px;
         background: rgba(20, 24, 33, 0.92);
         backdrop-filter: blur(20px);
         border: 1px solid var(--border);
-        border-radius: 25px;
+        border-radius: 24px;
         display: flex;
         align-items: center;
         justify-content: space-around;
         z-index: 35;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-        transition: bottom 0.2s;
-      }
-
-      body.has-timeline .mobile-dock-nav {
-        bottom: calc(66px + env(safe-area-inset-bottom));
       }
 
       .dock-btn {
@@ -1179,6 +1183,17 @@
     <video id="bgVideo" autoplay loop muted playsinline webkit-playsinline preload="auto"></video>
   </div>
   <div class="bg-overlay" id="bgOverlay"></div>
+
+  <!-- Фоновая 24-часовая линейка времени -->
+  <div class="timeline-backdrop-container" id="bottomTimelineBar">
+    <div class="timeline-ruler-wrap" id="timelineTrack">
+      <div class="timeline-axis-line"></div>
+      <div class="timeline-ticks-layer" id="timelineTicksLayer"></div>
+      <div id="timelineBlocksContainer"></div>
+      <div class="timeline-now-pointer" id="timelineCursor"></div>
+      <div class="timeline-hours-labels" id="timelineHoursLabels"></div>
+    </div>
+  </div>
 
   <div class="top-drawer-container" id="topDrawer">
     <div class="controls-meta">
@@ -1399,24 +1414,6 @@
     </button>
   </div>
 
-  <!-- Нижня 24-годинна шкала доби -->
-  <div class="bottom-timeline-bar" id="bottomTimelineBar">
-    <div class="timeline-track-wrap" id="timelineTrack">
-      <div class="timeline-base-line"></div>
-      <div id="timelineBlocksContainer"></div>
-      <div class="timeline-current-cursor" id="timelineCursor"></div>
-      <div class="timeline-ticks" id="timelineTicks">
-        <span class="timeline-tick-label" style="left: 0%;">00:00</span>
-        <span class="timeline-tick-label" style="left: 16.66%;">04:00</span>
-        <span class="timeline-tick-label" style="left: 33.33%;">08:00</span>
-        <span class="timeline-tick-label" style="left: 50%;">12:00</span>
-        <span class="timeline-tick-label" style="left: 66.66%;">16:00</span>
-        <span class="timeline-tick-label" style="left: 83.33%;">20:00</span>
-        <span class="timeline-tick-label" style="left: 100%;">24:00</span>
-      </div>
-    </div>
-  </div>
-
   <nav class="mobile-dock-nav">
     <button class="dock-btn" id="dockScheduleBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1476,7 +1473,7 @@
 
         <div id="fbStatus" style="font-size: 0.82rem; min-height: 18px;"></div>
 
-        <div style="display: flex; justify-content: space-end; gap: 8px; margin-top: 4px;">
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
           <button type="button" class="btn-action" id="closeModalBtn">Закрити</button>
           <button type="submit" id="fbSubmitBtn" style="background: #2ed573; border: none; color: #090a0f; font-weight: 700; padding: 7px 16px; border-radius: 8px; cursor: pointer;">Надіслати</button>
         </div>
@@ -1594,6 +1591,8 @@
 
     const bottomTimelineBar = document.getElementById('bottomTimelineBar');
     const timelineBlocksContainer = document.getElementById('timelineBlocksContainer');
+    const timelineTicksLayer = document.getElementById('timelineTicksLayer');
+    const timelineHoursLabels = document.getElementById('timelineHoursLabels');
     const timelineCursor = document.getElementById('timelineCursor');
     const timelineToggleCheckbox = document.getElementById('timelineToggleCheckbox');
 
@@ -1630,7 +1629,6 @@
     document.getElementById('dockAboutBtn').onclick = openAboutModal;
     document.getElementById('closeModalBtn').onclick = closeAboutModal;
 
-    // Робимо клікабельною всю плашку селекта
     document.querySelectorAll('.pill-select-wrapper').forEach(wrapper => {
       wrapper.addEventListener('click', (e) => {
         const select = wrapper.querySelector('select');
@@ -1644,15 +1642,12 @@
       });
     });
 
-    // Налаштування шкали Timeline
     const isTimelineEnabled = localStorage.getItem('ui_timeline_enabled') !== 'false';
     timelineToggleCheckbox.checked = isTimelineEnabled;
     if (isTimelineEnabled) {
       bottomTimelineBar.classList.remove('hidden');
-      document.body.classList.add('has-timeline');
     } else {
       bottomTimelineBar.classList.add('hidden');
-      document.body.classList.remove('has-timeline');
     }
 
     timelineToggleCheckbox.onchange = (e) => {
@@ -1660,10 +1655,8 @@
       localStorage.setItem('ui_timeline_enabled', enabled);
       if (enabled) {
         bottomTimelineBar.classList.remove('hidden');
-        document.body.classList.add('has-timeline');
       } else {
         bottomTimelineBar.classList.add('hidden');
-        document.body.classList.remove('has-timeline');
       }
     };
 
@@ -2068,6 +2061,42 @@
       return h * 60 + m;
     }
 
+    // Построение линейки делений на 24 часа
+    function buildTimelineRuler() {
+      if (!timelineTicksLayer || !timelineHoursLabels) return;
+      timelineTicksLayer.innerHTML = '';
+      timelineHoursLabels.innerHTML = '';
+
+      const totalMinutes = 24 * 60;
+
+      for (let m = 0; m <= totalMinutes; m += 15) {
+        const pct = (m / totalMinutes) * 100;
+        const tick = document.createElement('div');
+        tick.className = 'tick-mark';
+        tick.style.left = `${pct}%`;
+
+        if (m % 60 === 0) {
+          tick.classList.add('hour');
+          const h = m / 60;
+          if (h % 2 === 0 || h === 24) {
+            const label = document.createElement('span');
+            label.className = 'hour-label';
+            label.style.left = `${pct}%`;
+            label.textContent = `${h.toString().padStart(2, '0')}:00`;
+            timelineHoursLabels.appendChild(label);
+          }
+        } else if (m % 30 === 0) {
+          tick.classList.add('m30');
+        } else {
+          tick.classList.add('m15');
+        }
+
+        timelineTicksLayer.appendChild(tick);
+      }
+    }
+
+    buildTimelineRuler();
+
     async function loadSchedule() {
       isLoading = true;
       const dayTitle = currentDay === 'tomorrow' ? 'ЗАВТРА' : 'СЬОГОДНІ';
@@ -2176,7 +2205,7 @@
       }).join('');
     }
 
-    // Рендеринг нижньої 24-годинної шкали
+    // Рендеринг блоков отключений
     function renderTimelineBar() {
       if (!timelineBlocksContainer) return;
       timelineBlocksContainer.innerHTML = '';
@@ -2197,7 +2226,7 @@
         const durationHours = ((endMin - startMin) / 60).toFixed(1).replace('.0', '');
 
         const lampOffSvg = `
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
             <line x1="2" y1="2" x2="22" y2="22"></line>
             <path d="M9 18h6"></path>
             <path d="M10 22h4"></path>
@@ -2211,10 +2240,11 @@
         block.style.left = `${leftPercent}%`;
         block.style.width = `${widthPercent}%`;
         block.title = `Відключення: ${slot.start} — ${slot.end} (${durationHours}г)`;
-        block.innerHTML = `${lampOffSvg} <span>${durationHours}г</span>`;
+        block.innerHTML = `${lampOffSvg} <span>${durationHours}</span>`;
         timelineBlocksContainer.appendChild(block);
 
-        if (slot.hasBuffer && rawEndMin > endMin) {
+        // Жёлтый буфер рендерится только при наличии hasBuffer === true
+        if (slot.hasBuffer === true && rawEndMin > endMin) {
           const bufLeftPercent = (endMin / totalMinutes) * 100;
           const bufWidthPercent = ((rawEndMin - endMin) / totalMinutes) * 100;
 
@@ -2222,7 +2252,7 @@
           bufBlock.className = 'timeline-block-buffer';
           bufBlock.style.left = `${bufLeftPercent}%`;
           bufBlock.style.width = `${bufWidthPercent}%`;
-          bufBlock.title = `Можливе відключення: ${slot.end} — ${slot.rawEnd} (30 хв)`;
+          bufBlock.title = `Можливе відключення (буфер): ${slot.end} — ${slot.rawEnd} (30 хв)`;
           timelineBlocksContainer.appendChild(bufBlock);
         }
       });
@@ -2330,7 +2360,6 @@
       return `${h}:${m}:${s}`;
     }
 
-    // Підключення до Server-Sent Events для оновлення в реальному часі
     function initLiveUpdates() {
       const evtSource = new EventSource('/api/events');
       evtSource.onmessage = (event) => {
@@ -2342,9 +2371,7 @@
           }
         } catch (e) {}
       };
-      evtSource.onerror = () => {
-        // Браузер самостійно відновить з'єднання при перезапуску сервера
-      };
+      evtSource.onerror = () => {};
     }
 
     loadSchedule();
