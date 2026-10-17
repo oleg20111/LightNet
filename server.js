@@ -252,21 +252,26 @@ async function syncSheet() {
       const slotMatches = [...rowStr.matchAll(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/g)];
       const parsedSlots = [];
 
+      // В server.js внутри syncSheet при обходе slotMatches:
       for (const m of slotMatches) {
         const rawStart = m[1];
         const rawEnd = m[2];
-
-        const effectiveEnd = getEffectiveEndTime(rawEnd);
-        const hasBuffer = rawEnd.endsWith(':30');
-
+        
+        // Проверяем буферы 30 минут как в начале (06:30), так и в конце (08:30 / 09:30)
+        const hasStartBuffer = rawStart.endsWith(':30');
+        const hasEndBuffer = rawEnd.endsWith(':30');
+        const hasBuffer = hasStartBuffer || hasEndBuffer;
+        
+        const effectiveEnd = rawEnd === '24:00' ? '23:59' : rawEnd;
+        
         parsedSlots.push({
-          start: rawStart,
-          end: effectiveEnd,
-          rawEnd: rawEnd === '24:00' ? '23:59' : rawEnd,
-          hasBuffer,
-          status: 'off'
-        });
-      }
+    start: rawStart,
+    end: effectiveEnd,
+    rawEnd: effectiveEnd,
+    hasBuffer: hasBuffer,
+    status: 'off'
+  });
+}
 
       parsedSlots.sort((a, b) => a.start.localeCompare(b.start));
 

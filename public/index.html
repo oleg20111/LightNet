@@ -15,7 +15,7 @@
       --green: #2ed573;
       --timer-scale: 1;
       --glow-radius: 25px;
-      --vertical-pos: 72%;
+      --vertical-pos: 68%;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -63,22 +63,38 @@
       transition: background 0.3s;
     }
 
-    /* Фоновая шкала-линейка на 24 часа */
-    .timeline-backdrop-container {
+    /* Эстетичный градиентный фон внизу страницы */
+    .bottom-ambient-glow {
       position: absolute;
       bottom: 0;
       left: 0;
       width: 100vw;
-      height: 80px;
-      z-index: 4;
+      height: 160px;
+      background: linear-gradient(to top, rgba(9, 10, 15, 0.95) 0%, rgba(9, 10, 15, 0.6) 65%, transparent 100%);
       pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Шкала времени — поднята выше плашки статуса */
+    .timeline-backdrop-container {
+      position: absolute;
+      bottom: 78px;
+      left: 24px;
+      right: 24px;
+      height: 74px;
+      z-index: 15;
+      background: rgba(18, 22, 32, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       padding: 0 16px 8px 16px;
       box-sizing: border-box;
-      opacity: 0.85;
-      transition: opacity 0.3s;
+      transition: opacity 0.3s, transform 0.3s;
     }
 
     .timeline-backdrop-container.hidden {
@@ -88,7 +104,7 @@
     .timeline-ruler-wrap {
       position: relative;
       width: 100%;
-      height: 46px;
+      height: 48px;
     }
 
     .timeline-axis-line {
@@ -97,14 +113,14 @@
       left: 0;
       width: 100%;
       height: 1px;
-      background: rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.18);
     }
 
     .timeline-block-off {
       position: absolute;
       bottom: 11px;
       height: 26px;
-      background: rgba(20, 24, 33, 0.82);
+      background: rgba(20, 24, 33, 0.85);
       border: 1.5px solid #ffa502;
       border-radius: 6px;
       display: flex;
@@ -116,6 +132,7 @@
       font-weight: 700;
       z-index: 3;
       box-sizing: border-box;
+      box-shadow: 0 2px 8px rgba(255, 165, 2, 0.2);
     }
 
     .timeline-block-buffer {
@@ -124,12 +141,12 @@
       height: 26px;
       background: repeating-linear-gradient(
         -45deg,
-        rgba(255, 165, 2, 0.12),
-        rgba(255, 165, 2, 0.12) 4px,
-        rgba(255, 165, 2, 0.28) 4px,
-        rgba(255, 165, 2, 0.28) 8px
+        rgba(255, 165, 2, 0.15),
+        rgba(255, 165, 2, 0.15) 4px,
+        rgba(255, 165, 2, 0.32) 4px,
+        rgba(255, 165, 2, 0.32) 8px
       );
-      border: 1px dashed rgba(255, 165, 2, 0.75);
+      border: 1px dashed rgba(255, 165, 2, 0.85);
       border-radius: 6px;
       z-index: 2;
       box-sizing: border-box;
@@ -147,12 +164,12 @@
       position: absolute;
       bottom: 0;
       width: 1px;
-      background: rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.15);
       transform: translateX(-50%);
     }
-    .tick-mark.m15 { height: 4px; background: rgba(255, 255, 255, 0.14); }
-    .tick-mark.m30 { height: 8px; background: rgba(255, 255, 255, 0.35); }
-    .tick-mark.hour { height: 13px; background: rgba(255, 255, 255, 0.6); }
+    .tick-mark.m15 { height: 4px; background: rgba(255, 255, 255, 0.12); }
+    .tick-mark.m30 { height: 7px; background: rgba(255, 255, 255, 0.32); }
+    .tick-mark.hour { height: 12px; background: rgba(255, 255, 255, 0.65); }
 
     .timeline-hours-labels {
       position: absolute;
@@ -165,20 +182,21 @@
     .hour-label {
       position: absolute;
       bottom: 0;
-      font-size: 0.62rem;
-      color: #8391a5;
+      font-size: 0.58rem;
+      color: #94a3b8;
       font-variant-numeric: tabular-nums;
       transform: translateX(-50%);
+      font-weight: 500;
     }
 
     .timeline-now-pointer {
       position: absolute;
-      top: 0;
+      top: -2px;
       bottom: 2px;
       width: 2px;
       background: #ff4757;
       z-index: 6;
-      box-shadow: 0 0 8px rgba(255, 71, 87, 0.85);
+      box-shadow: 0 0 10px rgba(255, 71, 87, 0.9);
       transform: translateX(-50%);
     }
 
@@ -907,9 +925,10 @@
       text-decoration: underline;
     }
 
+    /* Блок "Оновлено" внизу экрана */
     .bottom-left-bar {
       position: absolute;
-      bottom: 24px;
+      bottom: 18px;
       left: 28px;
       display: flex;
       align-items: center;
@@ -1018,9 +1037,11 @@
       }
 
       .timeline-backdrop-container {
-        height: 72px;
-        bottom: 60px;
-        padding: 0 10px 4px 10px;
+        height: 68px;
+        bottom: 114px;
+        left: 10px;
+        right: 10px;
+        padding: 0 8px 4px 8px;
       }
 
       .top-drawer-container {
@@ -1059,7 +1080,7 @@
 
       .bottom-left-bar {
         left: 14px;
-        bottom: 66px;
+        bottom: 64px;
         gap: 8px;
       }
 
@@ -1184,7 +1205,10 @@
   </div>
   <div class="bg-overlay" id="bgOverlay"></div>
 
-  <!-- Фоновая 24-часовая линейка времени -->
+  <!-- Мягкий градиент внизу для красоты -->
+  <div class="bottom-ambient-glow"></div>
+
+  <!-- Шкала времени (поднята выше блока "Оновлено") -->
   <div class="timeline-backdrop-container" id="bottomTimelineBar">
     <div class="timeline-ruler-wrap" id="timelineTrack">
       <div class="timeline-axis-line"></div>
@@ -1308,7 +1332,7 @@
 
       <div class="ctrl-grid-row">
         <span class="ctrl-label">Вертикальне положення</span>
-        <input type="range" id="posRange" min="20" max="88" value="72" />
+        <input type="range" id="posRange" min="20" max="88" value="68" />
       </div>
 
       <div class="ctrl-grid-row">
@@ -1393,6 +1417,7 @@
     </div>
   </div>
 
+  <!-- Блок "Оновлено" в самом низу -->
   <div class="bottom-left-bar">
     <div class="update-status-pill">
       <div class="waveform-icon">
@@ -1662,7 +1687,7 @@
 
     function applyStyles() {
       const scale = (localStorage.getItem('ui_scale') || 100) / 100;
-      const verticalPos = localStorage.getItem('ui_vertical_pos') || 72;
+      const verticalPos = localStorage.getItem('ui_vertical_pos') || 68;
       const textColor = localStorage.getItem('ui_text_color') || '#a4b0be';
       const greenColor = localStorage.getItem('ui_green_color') || '#2ed573';
       const redColor = localStorage.getItem('ui_red_color') || '#ff4757';
@@ -2061,7 +2086,7 @@
       return h * 60 + m;
     }
 
-    // Построение линейки делений на 24 часа
+    // Линейка со всеми 24 часами (0, 1, 2, 3 ... 24)
     function buildTimelineRuler() {
       if (!timelineTicksLayer || !timelineHoursLabels) return;
       timelineTicksLayer.innerHTML = '';
@@ -2078,13 +2103,12 @@
         if (m % 60 === 0) {
           tick.classList.add('hour');
           const h = m / 60;
-          if (h % 2 === 0 || h === 24) {
-            const label = document.createElement('span');
-            label.className = 'hour-label';
-            label.style.left = `${pct}%`;
-            label.textContent = `${h.toString().padStart(2, '0')}:00`;
-            timelineHoursLabels.appendChild(label);
-          }
+          
+          const label = document.createElement('span');
+          label.className = 'hour-label';
+          label.style.left = `${pct}%`;
+          label.textContent = h === 24 ? '24' : h.toString();
+          timelineHoursLabels.appendChild(label);
         } else if (m % 30 === 0) {
           tick.classList.add('m30');
         } else {
@@ -2172,8 +2196,8 @@
         `;
 
         let timeDisplay = `${slot.start} — ${slot.end}`;
-        if (slot.hasBuffer && slot.rawEnd) {
-          timeDisplay = `${slot.start} — ${slot.end} <span style="font-size:0.75rem; color:#ffa502; font-weight:normal;">(до ${slot.rawEnd} можл.)</span>`;
+        if (slot.hasBuffer) {
+          timeDisplay += ` <span style="font-size:0.75rem; color:#ffa502; font-weight:normal;">(±30 хв можл.)</span>`;
         }
 
         const badgeContent = isOff ? `
@@ -2205,7 +2229,7 @@
       }).join('');
     }
 
-    // Рендеринг блоков отключений
+    // Рендеринг блоков и буферов (с 6:30 до 9:00 и остальных)
     function renderTimelineBar() {
       if (!timelineBlocksContainer) return;
       timelineBlocksContainer.innerHTML = '';
@@ -2217,16 +2241,11 @@
       schedule.forEach(slot => {
         if (slot.status !== 'off') return;
 
-        const startMin = timeToMinutes(slot.start);
-        const endMin = timeToMinutes(slot.end);
-        const rawEndMin = slot.rawEnd ? timeToMinutes(slot.rawEnd) : endMin;
-
-        const leftPercent = (startMin / totalMinutes) * 100;
-        const widthPercent = ((endMin - startMin) / totalMinutes) * 100;
-        const durationHours = ((endMin - startMin) / 60).toFixed(1).replace('.0', '');
+        let startMin = timeToMinutes(slot.start);
+        let endMin = timeToMinutes(slot.end);
 
         const lampOffSvg = `
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
             <line x1="2" y1="2" x2="22" y2="22"></line>
             <path d="M9 18h6"></path>
             <path d="M10 22h4"></path>
@@ -2235,25 +2254,53 @@
           </svg>
         `;
 
-        const block = document.createElement('div');
-        block.className = 'timeline-block-off';
-        block.style.left = `${leftPercent}%`;
-        block.style.width = `${widthPercent}%`;
-        block.title = `Відключення: ${slot.start} — ${slot.end} (${durationHours}г)`;
-        block.innerHTML = `${lampOffSvg} <span>${durationHours}</span>`;
-        timelineBlocksContainer.appendChild(block);
-
-        // Жёлтый буфер рендерится только при наличии hasBuffer === true
-        if (slot.hasBuffer === true && rawEndMin > endMin) {
-          const bufLeftPercent = (endMin / totalMinutes) * 100;
-          const bufWidthPercent = ((rawEndMin - endMin) / totalMinutes) * 100;
+        // Если в начале слота половинное время (например 06:30-07:00 возможно), рисуем буфер спереди
+        if (slot.start.endsWith(':30')) {
+          const bufStart = startMin;
+          const bufEnd = startMin + 30;
+          const bufLeft = (bufStart / totalMinutes) * 100;
+          const bufWidth = ((bufEnd - bufStart) / totalMinutes) * 100;
 
           const bufBlock = document.createElement('div');
           bufBlock.className = 'timeline-block-buffer';
-          bufBlock.style.left = `${bufLeftPercent}%`;
-          bufBlock.style.width = `${bufWidthPercent}%`;
-          bufBlock.title = `Можливе відключення (буфер): ${slot.end} — ${slot.rawEnd} (30 хв)`;
+          bufBlock.style.left = `${bufLeft}%`;
+          bufBlock.style.width = `${bufWidth}%`;
+          bufBlock.title = `Можливе відключення (буфер): 30 хв`;
           timelineBlocksContainer.appendChild(bufBlock);
+
+          startMin = bufEnd; // Сдвигаем основное гарантированное отключение
+        }
+
+        // Если в конце слота половинное время (например до 08:30 / 09:30), рисуем буфер сзади
+        if (slot.end.endsWith(':30') && endMin > startMin + 30) {
+          const bufStart = endMin - 30;
+          const bufEnd = endMin;
+          const bufLeft = (bufStart / totalMinutes) * 100;
+          const bufWidth = ((bufEnd - bufStart) / totalMinutes) * 100;
+
+          const bufBlock = document.createElement('div');
+          bufBlock.className = 'timeline-block-buffer';
+          bufBlock.style.left = `${bufLeft}%`;
+          bufBlock.style.width = `${bufWidth}%`;
+          bufBlock.title = `Можливе відключення (буфер): 30 хв`;
+          timelineBlocksContainer.appendChild(bufBlock);
+
+          endMin = bufStart; // Сокращаем гарантированный блок до ровного часа
+        }
+
+        // Основной гарантированный блок отключения
+        if (endMin > startMin) {
+          const leftPercent = (startMin / totalMinutes) * 100;
+          const widthPercent = ((endMin - startMin) / totalMinutes) * 100;
+          const durationHours = ((endMin - startMin) / 60).toFixed(1).replace('.0', '');
+
+          const block = document.createElement('div');
+          block.className = 'timeline-block-off';
+          block.style.left = `${leftPercent}%`;
+          block.style.width = `${widthPercent}%`;
+          block.title = `Відключення: ${slot.start} — ${slot.end}`;
+          block.innerHTML = `${lampOffSvg} <span>${durationHours}г</span>`;
+          timelineBlocksContainer.appendChild(block);
         }
       });
     }
