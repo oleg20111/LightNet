@@ -1323,6 +1323,27 @@ function openAboutModal() {
   }
 }
 
+// Слухаємо миттєві оновлення з сервера через SSE
+    function initLiveUpdates() {
+      const evtSource = new EventSource('/api/events');
+
+      evtSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'SCHEDULE_UPDATED') {
+            console.log('Отримано сигнал оновлення розкладу з сервера');
+            loadSchedule();
+          }
+        } catch (e) {}
+      };
+
+      evtSource.onerror = () => {
+        // Якщо з'єднання розірвалося (наприклад, сервіс перезапускається), браузер сам спробує перепідключитися
+      };
+    }
+
+    initLiveUpdates();
+
 // Закриття модалки: ховаємо вікно і відновлюємо відтворення відео
 function closeAboutModal() {
   aboutModal.style.display = 'none';
@@ -1887,7 +1908,7 @@ document.getElementById('closeModalBtn').onclick = closeAboutModal;
       document.getElementById('caption').textContent = `СИНХРОНІЗАЦІЯ • ${dayTitle}`;
 
       try {
-        const res = await fetch(`/api/status?region=${regionVal}&queue=${queueVal}&day=${currentDay}`);
+        const res = await fetch(`/api/status?region=${regionVal}&queue=${queueVal}&day=${currentDay}&_t=${Date.now()}`);
         const data = await res.json();
         schedule = data.slots || [];
 
@@ -2081,7 +2102,7 @@ document.getElementById('closeModalBtn').onclick = closeAboutModal;
     }
 
     loadSchedule();
-    setInterval(loadSchedule, 5 * 60 * 1000);
+    setInterval(loadSchedule, 60 * 1000);
     setInterval(tick, 1000);
 
     document.querySelectorAll('.pill-select-wrapper').forEach(wrapper => {

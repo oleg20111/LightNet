@@ -347,12 +347,38 @@ app.post('/api/webhook/sync', async (req, res) => {
   try {
     console.log('[Webhook] Отримано запит на синхронізацію з таблиці');
     await syncSheet();
+    
+    // Сповіщаємо всі відкриті сторінки браузера
+    broadcastScheduleUpdate();
+
     res.json({ success: true, message: 'Синхронізацію виконано' });
   } catch (err) {
     console.error('[Webhook Error]:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+// Зберігаємо підключені браузери для миттєвого пушу
+let sseClients = [];
+
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  sseClients.push(res);
+
+  req.on('close', () => {
+    sseClients = sseClients.filter(client => client !== res);
+  });
+});
+
+function broadcastScheduleUpdate() {
+  sseClients.forEach(client => {
+    client.write(`data: ${JSON.stringify({ type: 'SCHEDULE_UPDATED' })}\n\n`);
+  });
+}
 
 app.get('/api/presets', (req, res) => {
   res.json(getPresets());
