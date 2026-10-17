@@ -63,7 +63,6 @@
       transition: background 0.3s;
     }
 
-    /* Эстетичный градиентный фон внизу страницы */
     .bottom-ambient-glow {
       position: absolute;
       bottom: 0;
@@ -75,7 +74,7 @@
       z-index: 2;
     }
 
-    /* Шкала времени — поднята выше плашки статуса */
+    /* Шкала времени с горизонтальным скроллингом на мобильных */
     .timeline-backdrop-container {
       position: absolute;
       bottom: 78px;
@@ -83,7 +82,7 @@
       right: 24px;
       height: 74px;
       z-index: 15;
-      background: rgba(18, 22, 32, 0.55);
+      background: rgba(18, 22, 32, 0.65);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -94,7 +93,15 @@
       justify-content: flex-end;
       padding: 0 16px 8px 16px;
       box-sizing: border-box;
-      transition: opacity 0.3s, transform 0.3s;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+    }
+
+    .timeline-backdrop-container::-webkit-scrollbar {
+      display: none;
     }
 
     .timeline-backdrop-container.hidden {
@@ -104,7 +111,9 @@
     .timeline-ruler-wrap {
       position: relative;
       width: 100%;
+      min-width: 100%;
       height: 48px;
+      flex-shrink: 0;
     }
 
     .timeline-axis-line {
@@ -116,7 +125,7 @@
       background: rgba(255, 255, 255, 0.18);
     }
 
-    /* Гарантированное отключение: оранжевый контур, черная лампочка и просто цифра (1.5, 2) */
+    /* Гарантированное отключение */
     .timeline-block-off {
       position: absolute;
       bottom: 11px;
@@ -133,14 +142,15 @@
       font-weight: 700;
       z-index: 3;
       box-sizing: border-box;
+      box-shadow: 0 2px 8px rgba(255, 165, 2, 0.2);
     }
 
-    /* Серая зона (может быть, а может не быть): серый контур и серая лампочка */
+    /* Серая зона возможных 30 минут */
     .timeline-block-buffer {
       position: absolute;
       bottom: 11px;
       height: 26px;
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.05);
       border: 1.5px solid rgba(255, 255, 255, 0.35);
       border-radius: 6px;
       display: flex;
@@ -494,18 +504,26 @@
       align-items: center;
     }
 
+    /* Надежные кнопки закрытия панелей */
     .close-sheet-btn {
-      display: none;
-      background: rgba(255, 255, 255, 0.1);
+      display: flex !important;
+      background: rgba(255, 255, 255, 0.12);
       border: 1px solid var(--border);
       color: #cbd5e1;
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
       border-radius: 50%;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       cursor: pointer;
       align-items: center;
       justify-content: center;
+      z-index: 50;
+      touch-action: manipulation;
+    }
+
+    .close-sheet-btn:active {
+      background: rgba(255, 255, 255, 0.25);
     }
 
     .tabs-wrap {
@@ -924,7 +942,6 @@
       text-decoration: underline;
     }
 
-    /* Блок "Оновлено" внизу экрана */
     .bottom-left-bar {
       position: absolute;
       bottom: 18px;
@@ -1035,12 +1052,18 @@
         text-shadow: none !important;
       }
 
+      /* Шкала на мобильных становится легко прокручиваемой */
       .timeline-backdrop-container {
         height: 68px;
         bottom: 114px;
         left: 10px;
         right: 10px;
-        padding: 0 8px 4px 8px;
+        padding: 0 12px 4px 12px;
+        pointer-events: auto;
+      }
+
+      .timeline-ruler-wrap {
+        min-width: 1200px;
       }
 
       .top-drawer-container {
@@ -1115,8 +1138,6 @@
         border-radius: 24px 24px 0 0;
         padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
       }
-
-      .close-sheet-btn { display: flex; }
 
       .bottom-drawer-handle { display: none !important; }
 
@@ -1204,7 +1225,6 @@
   </div>
   <div class="bg-overlay" id="bgOverlay"></div>
 
-  <!-- Мягкий градиент внизу для красоты -->
   <div class="bottom-ambient-glow"></div>
 
   <!-- Шкала времени (поднята выше блока "Оновлено") -->
@@ -1286,7 +1306,7 @@
     <aside class="schedule-panel">
       <div class="panel-header-title">
         <span>ДОБОВИЙ РОЗКЛАД</span>
-        <button class="close-sheet-btn" id="closeScheduleBtn">✕</button>
+        <button class="close-sheet-btn" id="closeScheduleBtn" title="Закрити">✕</button>
       </div>
       <div class="tabs-wrap">
         <button class="tab-btn active" id="tabToday">Сьогодні</button>
@@ -1303,7 +1323,7 @@
     <div class="bg-controls-panel">
       <div class="card-top-title-row">
         <div class="card-top-title">Фон та стиль</div>
-        <button class="close-sheet-btn" id="closeBgBtn" style="display: flex;">✕</button>
+        <button class="close-sheet-btn" id="closeBgBtn" title="Закрити">✕</button>
       </div>
 
       <div style="display: flex; justify-content: flex-end;">
@@ -1416,7 +1436,6 @@
     </div>
   </div>
 
-  <!-- Блок "Оновлено" в самом низу -->
   <div class="bottom-left-bar">
     <div class="update-status-pill">
       <div class="waveform-icon">
@@ -1509,6 +1528,7 @@
     let currentDay = 'today';
     let schedule = [];
     let isLoading = false;
+    let hasAutoScrolled = false;
 
     const DB_NAME = 'LightNetMediaDB';
     const DB_STORE = 'backgrounds';
@@ -1612,6 +1632,7 @@
     const topDrawer = document.getElementById('topDrawer');
     const scheduleDrawer = document.getElementById('scheduleDrawer');
     const bgDrawer = document.getElementById('bgDrawer');
+    const aboutModal = document.getElementById('aboutModal');
 
     const bottomTimelineBar = document.getElementById('bottomTimelineBar');
     const timelineBlocksContainer = document.getElementById('timelineBlocksContainer');
@@ -1622,9 +1643,26 @@
 
     document.getElementById('topDrawerHandle').onclick = () => topDrawer.classList.toggle('open');
     document.getElementById('scheduleHandle').onclick = () => scheduleDrawer.classList.toggle('open');
-    document.getElementById('closeScheduleBtn').onclick = () => scheduleDrawer.classList.remove('open');
     document.getElementById('bgDrawerHandle').onclick = () => bgDrawer.classList.toggle('open');
-    document.getElementById('closeBgBtn').onclick = () => bgDrawer.classList.remove('open');
+
+    // Надежное закрытие любого меню для сенсорных экранов
+    function bindTouchClose(btnId, closeAction) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+
+      const trigger = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAction();
+      };
+
+      btn.addEventListener('click', trigger);
+      btn.addEventListener('touchend', trigger);
+    }
+
+    bindTouchClose('closeScheduleBtn', () => scheduleDrawer.classList.remove('open'));
+    bindTouchClose('closeBgBtn', () => bgDrawer.classList.remove('open'));
+    bindTouchClose('closeModalBtn', closeAboutModal);
 
     document.getElementById('dockScheduleBtn').onclick = () => {
       bgDrawer.classList.remove('open');
@@ -1635,7 +1673,6 @@
       bgDrawer.classList.toggle('open');
     };
 
-    const aboutModal = document.getElementById('aboutModal');
     function openAboutModal() {
       aboutModal.style.display = 'flex';
       if (bgVideo && !bgVideo.paused) {
@@ -1651,7 +1688,6 @@
 
     document.getElementById('openModalBtn').onclick = openAboutModal;
     document.getElementById('dockAboutBtn').onclick = openAboutModal;
-    document.getElementById('closeModalBtn').onclick = closeAboutModal;
 
     document.querySelectorAll('.pill-select-wrapper').forEach(wrapper => {
       wrapper.addEventListener('click', (e) => {
@@ -2081,11 +2117,12 @@
     };
 
     function timeToMinutes(str) {
+      if (!str) return 0;
       const [h, m] = str.split(':').map(Number);
-      return h * 60 + m;
+      return h * 60 + (m || 0);
     }
 
-    // Линейка со всеми 24 часами (0, 1, 2, 3 ... 24)
+    // Линейка со всеми 24 часами
     function buildTimelineRuler() {
       if (!timelineTicksLayer || !timelineHoursLabels) return;
       timelineTicksLayer.innerHTML = '';
@@ -2120,6 +2157,18 @@
 
     buildTimelineRuler();
 
+    // Авто-скролл на текущее время при входе
+    function scrollToCurrentTime() {
+      if (!bottomTimelineBar || !timelineCursor) return;
+      const cursorLeft = timelineCursor.offsetLeft;
+      const containerWidth = bottomTimelineBar.clientWidth;
+      
+      bottomTimelineBar.scrollTo({
+        left: cursorLeft - (containerWidth / 2),
+        behavior: 'smooth'
+      });
+    }
+
     async function loadSchedule() {
       isLoading = true;
       const dayTitle = currentDay === 'tomorrow' ? 'ЗАВТРА' : 'СЬОГОДНІ';
@@ -2153,6 +2202,11 @@
         renderScheduleList();
         renderTimelineBar();
         tick();
+
+        if (!hasAutoScrolled) {
+          setTimeout(scrollToCurrentTime, 250);
+          hasAutoScrolled = true;
+        }
       }
     }
 
@@ -2195,7 +2249,9 @@
         `;
 
         let timeDisplay = `${slot.start} — ${slot.end}`;
-        if (slot.hasBuffer) {
+        if (slot.hasBuffer && slot.rawEnd && slot.rawEnd !== slot.end) {
+          timeDisplay = `${slot.start} — ${slot.end} <span style="font-size:0.75rem; color:#ffa502; font-weight:normal;">(до ${slot.rawEnd} можл.)</span>`;
+        } else if (slot.hasBuffer) {
           timeDisplay += ` <span style="font-size:0.75rem; color:#ffa502; font-weight:normal;">(±30 хв можл.)</span>`;
         }
 
@@ -2228,7 +2284,7 @@
       }).join('');
     }
 
-    // Рендеринг блоков и буферов (с 6:30 до 9:00 и остальных)
+    // Отрисовка блоков и буферов на шкале
     function renderTimelineBar() {
       if (!timelineBlocksContainer) return;
       timelineBlocksContainer.innerHTML = '';
@@ -2237,7 +2293,6 @@
 
       const totalMinutes = 24 * 60;
 
-      // Иконка перечеркнутой лампочки (для отключения)
       const lampOffSvg = `
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffa502" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
           <line x1="2" y1="2" x2="22" y2="22"></line>
@@ -2248,7 +2303,6 @@
         </svg>
       `;
 
-      // Иконка серой обычной лампочки (для серой зоны "может быть / не быть")
       const lampMaybeSvg = `
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8391a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
           <path d="M9 18h6"></path>
@@ -2264,12 +2318,11 @@
         let endMin = timeToMinutes(slot.end);
         let rawEndMin = slot.rawEnd ? timeToMinutes(slot.rawEnd) : endMin;
 
-        // Если есть буфер 30 минут, но endMin равен rawEndMin — корректируем
         if (slot.hasBuffer && endMin === rawEndMin && (rawEndMin - startMin) > 30) {
           endMin = rawEndMin - 30;
         }
 
-        // 1. Блок гарантированного отключения
+        // Блок гарантированного отключения
         if (endMin > startMin) {
           const leftPercent = (startMin / totalMinutes) * 100;
           const widthPercent = ((endMin - startMin) / totalMinutes) * 100;
@@ -2284,7 +2337,7 @@
           timelineBlocksContainer.appendChild(block);
         }
 
-        // 2. Серый контур с серой лампочкой на 30 минут
+        // Серый контур с серой лампочкой на 30 минут
         if (slot.hasBuffer && rawEndMin > endMin) {
           const bufLeftPercent = (endMin / totalMinutes) * 100;
           const bufWidthPercent = ((rawEndMin - endMin) / totalMinutes) * 100;
