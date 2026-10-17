@@ -257,14 +257,30 @@ async function syncSheet() {
         const rawStart = m[1];
         const rawEnd = m[2];
 
-        // Буфер 30 минут может быть ТОЛЬКО в конце интервала
-        const hasBuffer = rawEnd.endsWith(':30');
-        const effectiveEnd = rawEnd === '24:00' ? '23:59' : rawEnd;
+        // Если заканчивается на :30 (например 08:30, 14:30, 20:30)
+        // ИЛИ если интервал 06:30-09:00 (где 08:30-09:00 — буфер)
+        let effectiveEnd = rawEnd === '24:00' ? '23:59' : rawEnd;
+        let hasBuffer = false;
+        let guaranteedEnd = effectiveEnd;
+
+        if (rawEnd.endsWith(':30')) {
+          hasBuffer = true;
+          // Гарантированное отключение идет до предыдущего ровного часа
+          const [h] = rawEnd.split(':').map(Number);
+          guaranteedEnd = `${h.toString().padStart(2, '0')}:00`;
+        } else if (rawStart.endsWith(':30') && (timeToMinutes(rawEnd) - timeToMinutes(rawStart)) % 60 !== 0) {
+          // Случай типа 06:30 - 09:00 (2.5 часа): гарантировано 2 часа (до 08:30), а 30 мин (до 09:00) — буфер
+          hasBuffer = true;
+          const endMin = timeToMinutes(rawEnd) - 30;
+          const gh = Math.floor(endMin / 60).toString().padStart(2, '0');
+          const gm = (endMin % 60).toString().padStart(2, '0');
+          guaranteedEnd = `${gh}:${gm}`;
+        }
 
         parsedSlots.push({
           start: rawStart,
-          end: effectiveEnd,
-          rawEnd: effectiveEnd,
+          end: guaranteedEnd,      // точный конец отключения
+          rawEnd: effectiveEnd,     // конец вместе с 30 мин буфера
           hasBuffer: hasBuffer,
           status: 'off'
         });

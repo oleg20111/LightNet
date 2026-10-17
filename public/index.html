@@ -116,11 +116,12 @@
       background: rgba(255, 255, 255, 0.18);
     }
 
+    /* Гарантированное отключение: оранжевый контур, черная лампочка и просто цифра (1.5, 2) */
     .timeline-block-off {
       position: absolute;
       bottom: 11px;
       height: 26px;
-      background: rgba(20, 24, 33, 0.85);
+      background: rgba(20, 24, 33, 0.88);
       border: 1.5px solid #ffa502;
       border-radius: 6px;
       display: flex;
@@ -132,24 +133,22 @@
       font-weight: 700;
       z-index: 3;
       box-sizing: border-box;
-      box-shadow: 0 2px 8px rgba(255, 165, 2, 0.2);
     }
 
+    /* Серая зона (может быть, а может не быть): серый контур и серая лампочка */
     .timeline-block-buffer {
       position: absolute;
       bottom: 11px;
       height: 26px;
-      background: repeating-linear-gradient(
-        -45deg,
-        rgba(255, 165, 2, 0.15),
-        rgba(255, 165, 2, 0.15) 4px,
-        rgba(255, 165, 2, 0.32) 4px,
-        rgba(255, 165, 2, 0.32) 8px
-      );
-      border: 1px dashed rgba(255, 165, 2, 0.85);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
       border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 2;
       box-sizing: border-box;
+      color: #8391a5;
     }
 
     .timeline-ticks-layer {
@@ -2238,54 +2237,65 @@
 
       const totalMinutes = 24 * 60;
 
+      // Иконка перечеркнутой лампочки (для отключения)
+      const lampOffSvg = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffa502" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <line x1="2" y1="2" x2="22" y2="22"></line>
+          <path d="M9 18h6"></path>
+          <path d="M10 22h4"></path>
+          <path d="M15.09 15.09A6 6 0 0 0 18 9a6 6 0 0 0-10.45-4.07"></path>
+          <path d="M6.34 6.34A6 6 0 0 0 6 9c.18 1.5.8 2.82 1.72 3.84"></path>
+        </svg>
+      `;
+
+      // Иконка серой обычной лампочки (для серой зоны "может быть / не быть")
+      const lampMaybeSvg = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8391a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <path d="M9 18h6"></path>
+          <path d="M10 22h4"></path>
+          <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"></path>
+        </svg>
+      `;
+
       schedule.forEach(slot => {
         if (slot.status !== 'off') return;
 
         const startMin = timeToMinutes(slot.start);
-        const rawEndMin = timeToMinutes(slot.end);
+        let endMin = timeToMinutes(slot.end);
+        let rawEndMin = slot.rawEnd ? timeToMinutes(slot.rawEnd) : endMin;
 
-        const lampOffSvg = `
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-            <line x1="2" y1="2" x2="22" y2="22"></line>
-            <path d="M9 18h6"></path>
-            <path d="M10 22h4"></path>
-            <path d="M15.09 15.09A6 6 0 0 0 18 9a6 6 0 0 0-10.45-4.07"></path>
-            <path d="M6.34 6.34A6 6 0 0 0 6 9c.18 1.5.8 2.82 1.72 3.84"></path>
-          </svg>
-        `;
-
-        // Если есть буфер в конце (:30), основная тёмная зона заканчивается за 30 минут до конца
-        let guaranteedEndMin = rawEndMin;
-        if (slot.hasBuffer === true && (rawEndMin - startMin) > 30) {
-          guaranteedEndMin = rawEndMin - 30;
-
-          // Жёлтая зона: строго последние 30 минут слота
-          const bufStart = guaranteedEndMin;
-          const bufEnd = rawEndMin;
-          const bufLeft = (bufStart / totalMinutes) * 100;
-          const bufWidth = ((bufEnd - bufStart) / totalMinutes) * 100;
-
-          const bufBlock = document.createElement('div');
-          bufBlock.className = 'timeline-block-buffer';
-          bufBlock.style.left = `${bufLeft}%`;
-          bufBlock.style.width = `${bufWidth}%`;
-          bufBlock.title = `Можливе відключення (буфер): 30 хв`;
-          timelineBlocksContainer.appendChild(bufBlock);
+        // Если есть буфер 30 минут, но endMin равен rawEndMin — корректируем
+        if (slot.hasBuffer && endMin === rawEndMin && (rawEndMin - startMin) > 30) {
+          endMin = rawEndMin - 30;
         }
 
-        // Гарантированный блок отключения (от начала до начала буфера)
-        if (guaranteedEndMin > startMin) {
+        // 1. Блок гарантированного отключения
+        if (endMin > startMin) {
           const leftPercent = (startMin / totalMinutes) * 100;
-          const widthPercent = ((guaranteedEndMin - startMin) / totalMinutes) * 100;
-          const durationHours = ((guaranteedEndMin - startMin) / 60).toFixed(1).replace('.0', '');
+          const widthPercent = ((endMin - startMin) / totalMinutes) * 100;
+          const duration = ((endMin - startMin) / 60).toFixed(1).replace('.0', '');
 
           const block = document.createElement('div');
           block.className = 'timeline-block-off';
           block.style.left = `${leftPercent}%`;
           block.style.width = `${widthPercent}%`;
-          block.title = `Відключення: ${slot.start} — ${slot.end}`;
-          block.innerHTML = `${lampOffSvg} <span>${durationHours}г</span>`;
+          block.title = `Відключення: ${slot.start} — ${slot.end} (${duration})`;
+          block.innerHTML = `${lampOffSvg} <span>${duration}</span>`;
           timelineBlocksContainer.appendChild(block);
+        }
+
+        // 2. Серый контур с серой лампочкой на 30 минут
+        if (slot.hasBuffer && rawEndMin > endMin) {
+          const bufLeftPercent = (endMin / totalMinutes) * 100;
+          const bufWidthPercent = ((rawEndMin - endMin) / totalMinutes) * 100;
+
+          const bufBlock = document.createElement('div');
+          bufBlock.className = 'timeline-block-buffer';
+          bufBlock.style.left = `${bufLeftPercent}%`;
+          bufBlock.style.width = `${bufWidthPercent}%`;
+          bufBlock.title = `Можливе відключення: ${slot.end} — ${slot.rawEnd} (30 хв)`;
+          bufBlock.innerHTML = `${lampMaybeSvg}`;
+          timelineBlocksContainer.appendChild(bufBlock);
         }
       });
     }
