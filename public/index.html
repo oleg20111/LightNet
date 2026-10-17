@@ -2241,8 +2241,8 @@
       schedule.forEach(slot => {
         if (slot.status !== 'off') return;
 
-        let startMin = timeToMinutes(slot.start);
-        let endMin = timeToMinutes(slot.end);
+        const startMin = timeToMinutes(slot.start);
+        const rawEndMin = timeToMinutes(slot.end);
 
         const lampOffSvg = `
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
@@ -2254,10 +2254,14 @@
           </svg>
         `;
 
-        // Если в начале слота половинное время (например 06:30-07:00 возможно), рисуем буфер спереди
-        if (slot.start.endsWith(':30')) {
-          const bufStart = startMin;
-          const bufEnd = startMin + 30;
+        // Если есть буфер в конце (:30), основная тёмная зона заканчивается за 30 минут до конца
+        let guaranteedEndMin = rawEndMin;
+        if (slot.hasBuffer === true && (rawEndMin - startMin) > 30) {
+          guaranteedEndMin = rawEndMin - 30;
+
+          // Жёлтая зона: строго последние 30 минут слота
+          const bufStart = guaranteedEndMin;
+          const bufEnd = rawEndMin;
           const bufLeft = (bufStart / totalMinutes) * 100;
           const bufWidth = ((bufEnd - bufStart) / totalMinutes) * 100;
 
@@ -2267,32 +2271,13 @@
           bufBlock.style.width = `${bufWidth}%`;
           bufBlock.title = `Можливе відключення (буфер): 30 хв`;
           timelineBlocksContainer.appendChild(bufBlock);
-
-          startMin = bufEnd; // Сдвигаем основное гарантированное отключение
         }
 
-        // Если в конце слота половинное время (например до 08:30 / 09:30), рисуем буфер сзади
-        if (slot.end.endsWith(':30') && endMin > startMin + 30) {
-          const bufStart = endMin - 30;
-          const bufEnd = endMin;
-          const bufLeft = (bufStart / totalMinutes) * 100;
-          const bufWidth = ((bufEnd - bufStart) / totalMinutes) * 100;
-
-          const bufBlock = document.createElement('div');
-          bufBlock.className = 'timeline-block-buffer';
-          bufBlock.style.left = `${bufLeft}%`;
-          bufBlock.style.width = `${bufWidth}%`;
-          bufBlock.title = `Можливе відключення (буфер): 30 хв`;
-          timelineBlocksContainer.appendChild(bufBlock);
-
-          endMin = bufStart; // Сокращаем гарантированный блок до ровного часа
-        }
-
-        // Основной гарантированный блок отключения
-        if (endMin > startMin) {
+        // Гарантированный блок отключения (от начала до начала буфера)
+        if (guaranteedEndMin > startMin) {
           const leftPercent = (startMin / totalMinutes) * 100;
-          const widthPercent = ((endMin - startMin) / totalMinutes) * 100;
-          const durationHours = ((endMin - startMin) / 60).toFixed(1).replace('.0', '');
+          const widthPercent = ((guaranteedEndMin - startMin) / totalMinutes) * 100;
+          const durationHours = ((guaranteedEndMin - startMin) / 60).toFixed(1).replace('.0', '');
 
           const block = document.createElement('div');
           block.className = 'timeline-block-off';

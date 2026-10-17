@@ -256,22 +256,19 @@ async function syncSheet() {
       for (const m of slotMatches) {
         const rawStart = m[1];
         const rawEnd = m[2];
-        
-        // Проверяем буферы 30 минут как в начале (06:30), так и в конце (08:30 / 09:30)
-        const hasStartBuffer = rawStart.endsWith(':30');
-        const hasEndBuffer = rawEnd.endsWith(':30');
-        const hasBuffer = hasStartBuffer || hasEndBuffer;
-        
+
+        // Буфер 30 минут может быть ТОЛЬКО в конце интервала
+        const hasBuffer = rawEnd.endsWith(':30');
         const effectiveEnd = rawEnd === '24:00' ? '23:59' : rawEnd;
-        
+
         parsedSlots.push({
-    start: rawStart,
-    end: effectiveEnd,
-    rawEnd: effectiveEnd,
-    hasBuffer: hasBuffer,
-    status: 'off'
-  });
-}
+          start: rawStart,
+          end: effectiveEnd,
+          rawEnd: effectiveEnd,
+          hasBuffer: hasBuffer,
+          status: 'off'
+        });
+      }
 
       parsedSlots.sort((a, b) => a.start.localeCompare(b.start));
 
