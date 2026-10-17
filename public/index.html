@@ -440,16 +440,10 @@
       transition: color 0.2s;
     }
 
-    .drawer-container {
-      position: absolute;
-      top: 0;
-      right: 0;
-      height: 100%;
-      z-index: 30;
-      display: flex;
-      transform: translateX(calc(100% - 24px));
-      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
+    .drawer-container,
+  .bottom-bg-drawer {
+    pointer-events: none; /* сам невидимый контейнер не блокирует клики */
+  }
 
     .drawer-container:hover,
     .drawer-container.open {
@@ -1111,7 +1105,11 @@
         font-size: 0.74rem;
       }
 
-      .drawer-handle { display: none !important; }
+      .drawer-handle,
+      .bottom-drawer-handle {
+        display: none !important;
+        pointer-events: none !important;
+      }
 
       .drawer-container {
         top: auto;
@@ -1127,39 +1125,18 @@
         transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
       }
 
-      .drawer-container.open {
-        transform: translateY(0);
-      }
+      .schedule-panel,
+  .bg-controls-panel {
+    pointer-events: auto;
+    position: relative;
+    z-index: 61;
+  }
 
-      .schedule-panel {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid var(--border);
-        border-radius: 24px 24px 0 0;
-        padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
-      }
-
-      .bottom-drawer-handle { display: none !important; }
-
-      .bottom-bg-drawer {
-        right: 0;
-        left: 0;
-        width: 100%;
-        transform: translateY(105%);
-        transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
-      }
-
-      .bottom-bg-drawer.open {
-        transform: translateY(0);
-      }
-
-      .bg-controls-panel {
-        width: 100%;
-        border-radius: 24px 24px 0 0;
-        max-height: 82vh;
-        max-height: 82dvh;
-        padding: 18px 16px calc(30px + env(safe-area-inset-bottom));
-      }
+      .drawer-container.open,
+  .bottom-bg-drawer.open {
+    pointer-events: auto;
+    z-index: 60;
+  }
 
       .theme-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -1214,6 +1191,22 @@
         background: rgba(255, 255, 255, 0.12);
         color: #fff;
       }
+
+      .close-sheet-btn {
+    display: flex !important;
+    position: relative;
+    z-index: 100 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    padding: 6px;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+  }
     }
   </style>
 </head>
@@ -1541,6 +1534,43 @@
         req.onerror = () => reject(req.error);
       });
     }
+
+    // Надежное закрытие шторки с явным снятием класса open
+    function setupCloseButton(buttonId, targetElement) {
+      const btn = document.getElementById(buttonId);
+      if (!btn || !targetElement) return;
+
+      const closeHandler = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        targetElement.classList.remove('open');
+      };
+
+      // pointerdown срабатывает раньше всех на мыши, стилусе и тач-экранах
+      btn.addEventListener('pointerdown', closeHandler, { passive: false });
+      btn.addEventListener('click', closeHandler);
+    }
+
+    // Привязываем кнопки к панелям
+    setupCloseButton('closeScheduleBtn', scheduleDrawer);
+    setupCloseButton('closeBgBtn', bgDrawer);
+    setupCloseButton('closeModalBtn', closeAboutModal);
+
+    // Дополнительно: закрытие при клике мимо открытой панели
+    document.addEventListener('pointerdown', (e) => {
+      if (scheduleDrawer.classList.contains('open')) {
+        if (!scheduleDrawer.querySelector('.schedule-panel').contains(e.target) && !document.getElementById('dockScheduleBtn').contains(e.target)) {
+          scheduleDrawer.classList.remove('open');
+        }
+      }
+      if (bgDrawer.classList.contains('open')) {
+        if (!bgDrawer.querySelector('.bg-controls-panel').contains(e.target) && !document.getElementById('dockStyleBtn').contains(e.target)) {
+          bgDrawer.classList.remove('open');
+        }
+      }
+    });
 
     async function saveMediaBlob(blob, type, key = 'saved_media_file') {
       const db = await openMediaDB();
