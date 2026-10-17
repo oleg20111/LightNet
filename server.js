@@ -252,26 +252,26 @@ async function syncSheet() {
       const slotMatches = [...rowStr.matchAll(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/g)];
       const parsedSlots = [];
 
-      // В server.js внутри syncSheet при обходе slotMatches:
       for (const m of slotMatches) {
         const rawStart = m[1];
         const rawEnd = m[2];
 
-        // Если заканчивается на :30 (например 08:30, 14:30, 20:30)
-        // ИЛИ если интервал 06:30-09:00 (где 08:30-09:00 — буфер)
-        let effectiveEnd = rawEnd === '24:00' ? '23:59' : rawEnd;
-        let hasBuffer = false;
-        let guaranteedEnd = effectiveEnd;
+        const sMin = timeToMinutes(rawStart);
+        const eMin = timeToMinutes(rawEnd);
+        const durationMin = eMin - sMin;
 
+        let guaranteedEnd = rawEnd === '24:00' ? '23:59' : rawEnd;
+        let hasBuffer = false;
+
+        // Если заканчивается на :30 (14:30, 20:30)
+        // ИЛИ если интервал длится X.5 часов (например, 06:30 - 09:00 = 150 мин, не кратно 60)
         if (rawEnd.endsWith(':30')) {
           hasBuffer = true;
-          // Гарантированное отключение идет до предыдущего ровного часа
           const [h] = rawEnd.split(':').map(Number);
           guaranteedEnd = `${h.toString().padStart(2, '0')}:00`;
-        } else if (rawStart.endsWith(':30') && (timeToMinutes(rawEnd) - timeToMinutes(rawStart)) % 60 !== 0) {
-          // Случай типа 06:30 - 09:00 (2.5 часа): гарантировано 2 часа (до 08:30), а 30 мин (до 09:00) — буфер
+        } else if (durationMin > 30 && durationMin % 60 !== 0) {
           hasBuffer = true;
-          const endMin = timeToMinutes(rawEnd) - 30;
+          const endMin = eMin - 30;
           const gh = Math.floor(endMin / 60).toString().padStart(2, '0');
           const gm = (endMin % 60).toString().padStart(2, '0');
           guaranteedEnd = `${gh}:${gm}`;
@@ -279,8 +279,8 @@ async function syncSheet() {
 
         parsedSlots.push({
           start: rawStart,
-          end: guaranteedEnd,      // точный конец отключения
-          rawEnd: effectiveEnd,     // конец вместе с 30 мин буфера
+          end: guaranteedEnd,
+          rawEnd: rawEnd === '24:00' ? '23:59' : rawEnd,
           hasBuffer: hasBuffer,
           status: 'off'
         });
@@ -308,6 +308,12 @@ async function syncSheet() {
 
 setInterval(syncSheet, 15 * 60 * 1000);
 syncSheet();
+
+function timeToMinutes(str) {
+  if (!str) return 0;
+  const [h, m] = str.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
 
 function generate24hTimeline(offSlots) {
   if (!offSlots || offSlots.length === 0) return [];
