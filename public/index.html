@@ -93,35 +93,38 @@
     }
 
     .pill-select-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 7px 14px;
-      gap: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 14px;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
 
-    .pill-select-wrapper:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.25);
-    }
+    /* Вимикаємо перехоплення кліку на іконках, щоб клік проходив наскрізь у контейнер/селект */
+.pill-select-wrapper svg {
+  pointer-events: none;
+  flex-shrink: 0;
+}
 
-    .pill-select {
-      appearance: none;
-      -webkit-appearance: none;
-      background: transparent;
-      border: none;
-      color: #f1f2f6;
-      font-size: 0.9rem;
-      font-weight: 500;
-      outline: none;
-      cursor: pointer;
-      padding-right: 18px;
-    }
+    /* Розтягуємо селект так, щоб він займав весь доступний простір плашки */
+.pill-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  color: #f1f2f6;
+  font-size: 0.9rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  padding-right: 18px;
+}
 
     .pill-select option {
       background: #161b22;
@@ -129,12 +132,12 @@
     }
 
     .pill-chevron {
-      position: absolute;
-      right: 12px;
-      pointer-events: none;
-      color: #a4b0be;
-      font-size: 0.72rem;
-    }
+  position: absolute;
+  right: 12px;
+  pointer-events: none; /* Клік проходить крізь стрілочку */
+  color: #a4b0be;
+  font-size: 0.72rem;
+}
 
     .top-drawer-handle {
       display: flex;
@@ -677,14 +680,14 @@
     }
 
     .theme-card img,
-    .theme-card video {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      opacity: 0.65;
-      pointer-events: none;
-    }
+.theme-card video {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.65;
+  pointer-events: none; /* Запобігає блокуванню кліку по самій картці */
+}
 
     .theme-card span {
       position: relative;
@@ -2080,6 +2083,19 @@ document.getElementById('closeModalBtn').onclick = closeAboutModal;
     loadSchedule();
     setInterval(loadSchedule, 5 * 60 * 1000);
     setInterval(tick, 1000);
+
+    document.querySelectorAll('.pill-select-wrapper').forEach(wrapper => {
+  wrapper.addEventListener('click', (e) => {
+    const select = wrapper.querySelector('select');
+    if (select && e.target !== select) {
+      if (typeof select.showPicker === 'function') {
+        select.showPicker();
+      } else {
+        select.focus();
+      }
+    }
+  });
+});
   </script>
 </body>
 </html>
