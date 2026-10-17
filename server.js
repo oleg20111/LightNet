@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
 
@@ -14,6 +13,7 @@ const PRESETS_FILE = path.join(__dirname, 'presets.json');
 const FEEDBACKS_FILE = path.join(__dirname, 'feedbacks.json');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const GOOGLE_SHEET_URL = process.env.GOOGLE_SHEET_URL || 'https://docs.google.com/spreadsheets/d/1mGpGXgSFFVfkrO8gmGHhvdIkI_Yg94oi68QL-OULGYM/edit?gid=1623407110#gid=1623407110';
 
 const DEFAULT_PRESETS = [
   {
@@ -95,154 +95,219 @@ function saveFeedbacks(feedbacks) {
   fs.writeFileSync(FEEDBACKS_FILE, JSON.stringify(feedbacks, null, 2), 'utf-8');
 }
 
-// Дата по Киеву YYYY-MM-DD
-function getKyivDateString(offsetDays = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Kyiv',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(d);
+// Формування посилання CSV експорту
+function getDirectCsvUrl(url) {
+  if (!url) return '';
+  if (url.includes('/pub?') && url.includes('output=csv')) return url;
+
+  const matchDoc = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!matchDoc) return url;
+  const docId = matchDoc[1];
+
+  let gid = '0';
+  const matchGid = url.match(/gid=([0-9]+)/);
+  if (matchGid) gid = matchGid[1];
+
+  return `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
 }
 
-// Кэш в памяти на 5 минут
-const memoryCache = new Map();
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-async function fetchScheduleFromBezsvitla(regionSlug, targetQueue, day = 'today') {
-  const isTomorrow = day === 'tomorrow';
-  const dateKey = getKyivDateString(isTomorrow ? 1 : 0);
-  const cacheKey = `${regionSlug}_${targetQueue}_${day}_${dateKey}`;
-
-  const cached = memoryCache.get(cacheKey);
-  if (cached && (Date.now() - cached.time < CACHE_TTL_MS)) {
-    return cached.data;
-  }
-
-  const url = `https://bezsvitla.com.ua/${regionSlug}`;
-  const response = await axios.get(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Accept-Language': 'uk-UA,uk;q=0.9'
-    },
-    timeout: 10000
-  });
-
-  const $ = cheerio.load(response.data);
-  const pageText = $('body').text().toLowerCase();
-
-  // Если запрашивают завтра, проверяем есть ли вообще упоминание завтрашнего графика
-  if (isTomorrow) {
-    const hasTomorrowSchedule = pageText.includes('завтра') || 
-                                pageText.includes('на наступну добу') || 
-                                pageText.includes('графік на завтра');
-    if (!hasTomorrowSchedule) {
-      const emptyResult = {
-        region: regionSlug,
-        queue: targetQueue,
-        day,
-        date: dateKey,
-        slots: [],
-        sourceUrl: url,
-        lastUpdated: new Date().toISOString()
-      };
-      memoryCache.set(cacheKey, { data: emptyResult, time: Date.now() });
-      return emptyResult;
+// Парсер CSV
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+  return lines.map(line => {
+    const row = [];
+    let insideQuotes = false;
+    let entry = '';
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        insideQuotes = !insideQuotes;
+      } else if (char === ',' && !insideQuotes) {
+        row.push(entry.trim());
+        entry = '';
+      } else {
+        entry += char;
+      }
     }
-  }
+    row.push(entry.trim());
+    return row;
+  });
+}
 
-  let targetCard = null;
-  $('*').each((_, el) => {
-    if (targetCard) return;
-    const text = $(el).text().trim();
-    if (text === `Черга ${targetQueue}` || text === `Черга: ${targetQueue}`) {
-      let current = $(el).parent();
-      
-      if (isTomorrow) {
-        let blockContext = current.text().toLowerCase();
-        if (!blockContext.includes('завтра')) {
-          return;
-        }
+// Кеш таблиці
+let scheduleDb = {
+  today: {},
+  tomorrow: {},
+  metaText: '',
+  sourceChannel: 't.me/poltavska_bezsvitla',
+  lastUpdatedTime: null
+};
+
+// Зсув 30 хвилин назад для "жовтої зони": "02:30" -> "02:00"
+function getEffectiveEndTime(endStr) {
+  if (endStr.endsWith(':30')) {
+    const [h] = endStr.split(':').map(Number);
+    return `${h.toString().padStart(2, '0')}:00`;
+  }
+  if (endStr === '24:00') return '23:59';
+  return endStr;
+}
+
+async function syncSheet() {
+  const csvUrl = getDirectCsvUrl(GOOGLE_SHEET_URL);
+  if (!csvUrl) return;
+
+  try {
+    const response = await axios.get(csvUrl, { timeout: 12000 });
+    const rows = parseCSV(response.data);
+    if (!rows || rows.length < 3) return;
+
+    let metaUpdated = '';
+    let sourceLink = 'https://t.me/poltavska_bezsvitla';
+
+    // Рядок 2 зі скріншоту: "Обновлено: 17.10.2026 17:12:01 | Источник: t.me/poltavska_bezsvitla"
+    for (let r = 0; r < Math.min(4, rows.length); r++) {
+      const textRow = rows[r].join(' ');
+      if (textRow.includes('Обновлено') || textRow.includes('Оновлено')) {
+        const timeMatch = textRow.match(/(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}:\d{2})/);
+        if (timeMatch) metaUpdated = timeMatch[1];
+
+        const srcMatch = textRow.match(/(t\.me\/[a-zA-Z0-9_]+)/);
+        if (srcMatch) sourceLink = `https://${srcMatch[1]}`;
+        break;
+      }
+    }
+
+    const todayMap = {};
+    const tomorrowMap = {};
+    let currentSection = 'today';
+
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      const rowStr = row.join(' ');
+
+      if (rowStr.includes('ГРАФИК НА ЗАВТРА') || rowStr.includes('ГРАФІК НА ЗАВТРА')) {
+        currentSection = 'tomorrow';
+        continue;
+      } else if (rowStr.includes('ГРАФИК НА СЕГОДНЯ') || rowStr.includes('ГРАФІК НА СЬОГОДНІ')) {
+        currentSection = 'today';
+        continue;
       }
 
-      while (current.length && current[0].tagName !== 'body') {
-        const parentText = current.parent().text() || '';
-        const queueMatches = parentText.match(/Черга\s+\d/g) || [];
-        if (queueMatches.length > 1) {
-          targetCard = current;
+      // Якщо в секції "Завтра" стоїть повідомлення про очікування публікації
+      if (currentSection === 'tomorrow' && (rowStr.includes('пока не опубликован') || rowStr.includes('Ожидается публикация'))) {
+        continue;
+      }
+
+      // Шукаємо чергу у рядку (Черга 1.1 - 6.2)
+      let queueKey = null;
+      for (const cell of row) {
+        const qm = cell.match(/(?:Черга|Очередь)?\s*([1-6]\.[1-2])/i);
+        if (qm) {
+          queueKey = qm[1];
           break;
         }
-        current = current.parent();
       }
-      if (!targetCard) targetCard = current;
+      if (!queueKey) continue;
+
+      // Знаходимо періоди відключень (Колонка C або вільний пошук інтервалів)
+      const slotMatches = [...rowStr.matchAll(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/g)];
+      const parsedSlots = [];
+
+      for (const m of slotMatches) {
+        const rawStart = m[1];
+        const rawEnd = m[2];
+
+        // Головна зміна: 30 хвилин необов'язкові
+        // Якщо 00:00-02:30 -> effectiveEnd = 02:00, hasBuffer = true
+        const effectiveEnd = getEffectiveEndTime(rawEnd);
+        const hasBuffer = rawEnd.endsWith(':30');
+
+        parsedSlots.push({
+          start: rawStart,
+          end: effectiveEnd,               // розрахунковий час для таймера
+          rawEnd: rawEnd === '24:00' ? '23:59' : rawEnd, // вихідний час для відображення в дужках
+          hasBuffer,                       // прапорець жовтої зони +30 хв
+          status: 'off'
+        });
+      }
+
+      parsedSlots.sort((a, b) => a.start.localeCompare(b.start));
+
+      const target = currentSection === 'tomorrow' ? tomorrowMap : todayMap;
+      target[queueKey] = parsedSlots;
     }
-  });
 
-  let slots = [];
-  if (targetCard && targetCard.length) {
-    targetCard.find('div, li, tr').each((_, row) => {
-      const rowText = $(row).text().trim();
-      const match = rowText.match(/^(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})$/);
-      if (match && (rowText.match(/(\d{1,2}:\d{2})/g) || []).length === 2) {
-        const start = match[1];
-        let end = match[2];
-        if (end === '24:00') end = '23:59';
+    scheduleDb = {
+      today: todayMap,
+      tomorrow: tomorrowMap,
+      metaText: metaUpdated,
+      sourceChannel: sourceLink,
+      lastUpdatedTime: new Date().toISOString()
+    };
 
-        const html = $(row).html().toLowerCase();
-        const isOff = html.includes('rgb(254') || 
-                      html.includes('rgb(255') || 
-                      html.includes('rose') || 
-                      html.includes('danger') || 
-                      html.includes('polygon') || 
-                      html.includes('bolt') ||
-                      html.includes('m13');
-
-        if (!slots.some(s => s.start === start && s.end === end)) {
-          slots.push({ start, end, status: isOff ? 'off' : 'on' });
-        }
-      }
-    });
+    console.log(`[Google Sheets] Таблицю оновлено. Час з таблиці: ${metaUpdated}`);
+  } catch (err) {
+    console.error('[Google Sheets] Помилка синхронізації:', err.message);
   }
-
-  slots.sort((a, b) => a.start.localeCompare(b.start));
-
-  const result = {
-    region: regionSlug,
-    queue: targetQueue,
-    day,
-    date: dateKey,
-    slots,
-    sourceUrl: url,
-    lastUpdated: new Date().toISOString()
-  };
-
-  memoryCache.set(cacheKey, { data: result, time: Date.now() });
-  return result;
 }
 
-app.get('/api/status', async (req, res) => {
-  const region = req.query.region || 'poltavska-oblast';
+// Оновлювати кожні 15 хвилин
+setInterval(syncSheet, 15 * 60 * 1000);
+syncSheet();
+
+app.get('/api/status', (req, res) => {
   const queue = (req.query.queue || '3.2').replace('-', '.');
   const day = req.query.day || 'today';
 
-  try {
-    const data = await fetchScheduleFromBezsvitla(region, queue, day);
-    res.json(data);
-  } catch (err) {
-    res.json({
-      region,
-      queue,
-      day,
-      slots: [],
-      sourceUrl: `https://bezsvitla.com.ua/${region}`,
-      error: 'Помилка отримання даних',
-      lastUpdated: new Date().toISOString()
-    });
-  }
+  const dayMap = day === 'tomorrow' ? scheduleDb.tomorrow : scheduleDb.today;
+  const rawSlots = dayMap[queue] || [];
+
+  // Формуємо повний 24-годинний таймлайн зі станами "on" та "off"
+  const fullTimeline = generate24hTimeline(rawSlots);
+
+  res.json({
+    queue,
+    day,
+    slots: fullTimeline,
+    metaUpdated: scheduleDb.metaText,
+    sourceUrl: scheduleDb.sourceChannel,
+    rawSourceUrl: GOOGLE_SHEET_URL,
+    lastUpdated: scheduleDb.lastUpdatedTime || new Date().toISOString()
+  });
 });
 
+// Допоміжна функція для побудови повної доби
+function generate24hTimeline(offSlots) {
+  if (!offSlots || offSlots.length === 0) return [];
+
+  const timeline = [];
+  let cursor = '00:00';
+
+  for (const off of offSlots) {
+    if (off.start > cursor) {
+      timeline.push({
+        start: cursor,
+        end: off.start,
+        status: 'on'
+      });
+    }
+    timeline.push(off);
+    cursor = off.rawEnd || off.end;
+  }
+
+  if (cursor < '23:59' && cursor < '24:00') {
+    timeline.push({
+      start: cursor,
+      end: '23:59',
+      status: 'on'
+    });
+  }
+
+  return timeline;
+}
+
+// Пресети
 app.get('/api/presets', (req, res) => {
   res.json(getPresets());
 });
@@ -271,7 +336,7 @@ app.post('/api/admin/presets', (req, res) => {
     savePresets(presets);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Помилка збереження файлу' });
+    res.status(500).json({ error: 'Помилка збереження' });
   }
 });
 

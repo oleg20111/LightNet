@@ -1863,18 +1863,23 @@
       const regionVal = regionSelect.value;
 
       document.getElementById('caption').textContent = `СИНХРОНІЗАЦІЯ • ${dayTitle}`;
-      document.getElementById('externalSourceLink').href = `https://bezsvitla.com.ua/${regionVal}`;
 
       try {
         const res = await fetch(`/api/status?region=${regionVal}&queue=${queueVal}&day=${currentDay}`);
         const data = await res.json();
         schedule = data.slots || [];
 
+        // Джерело: t.me/poltavska_bezsvitla
         if (data.sourceUrl) {
-          document.getElementById('externalSourceLink').href = data.sourceUrl;
+          const srcLink = document.getElementById('externalSourceLink');
+          srcLink.href = data.sourceUrl;
+          srcLink.textContent = data.sourceUrl.replace('https://', '');
         }
 
-        if (data.lastUpdated) {
+        // Обновлено: з таблиці
+        if (data.metaUpdated) {
+          document.getElementById('updateStatusText').textContent = `Оновлено: ${data.metaUpdated}`;
+        } else if (data.lastUpdated) {
           const t = new Date(data.lastUpdated).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
           document.getElementById('updateStatusText').textContent = `Оновлено: ${t}`;
         }
@@ -1895,7 +1900,7 @@
 
       if (schedule.length === 0) {
         const msg = currentDay === 'tomorrow' 
-          ? 'Графік на завтра ще не оприлюднено обленерго' 
+          ? 'Графік на цей день поки не опублікований в каналі' 
           : 'Графік відсутній або оновлюється на сайті';
         
         listEl.innerHTML = `
@@ -1912,23 +1917,24 @@
         const isCurrent = (currentDay === 'today') && (currentMinutes >= sMin && currentMinutes < eMin);
         const isOff = slot.status === 'off';
 
-        let leftIcon = '';
-        if (isOff) {
-          leftIcon = `
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#ff4757">
-              <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
-            </svg>
-          `;
-        } else {
-          leftIcon = `
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#2ed573">
-              <circle cx="12" cy="12" r="5"/>
-              <line x1="12" y1="1" x2="12" y2="4" stroke="#2ed573" stroke-width="2"/>
-              <line x1="12" y1="20" x2="12" y2="23" stroke="#2ed573" stroke-width="2"/>
-              <line x1="1" y1="12" x2="4" y2="12" stroke="#2ed573" stroke-width="2"/>
-              <line x1="20" y1="12" x2="23" y2="12" stroke="#2ed573" stroke-width="2"/>
-            </svg>
-          `;
+        let leftIcon = isOff ? `
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#ff4757">
+            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
+          </svg>
+        ` : `
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#2ed573">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="4" stroke="#2ed573" stroke-width="2"/>
+            <line x1="12" y1="20" x2="12" y2="23" stroke="#2ed573" stroke-width="2"/>
+            <line x1="1" y1="12" x2="4" y2="12" stroke="#2ed573" stroke-width="2"/>
+            <line x1="20" y1="12" x2="23" y2="12" stroke="#2ed573" stroke-width="2"/>
+          </svg>
+        `;
+
+        // Відображення жовтої зони в дужках: 00:00 — 02:00 (до 02:30 можл.)
+        let timeDisplay = `${slot.start} — ${slot.end}`;
+        if (slot.hasBuffer && slot.rawEnd) {
+          timeDisplay = `${slot.start} — ${slot.end} <span style="font-size:0.75rem; color:#ffa502; font-weight:normal;">(до ${slot.rawEnd} можл.)</span>`;
         }
 
         const badgeContent = isOff ? `
@@ -1952,7 +1958,7 @@
           <div class="timeline-item ${isCurrent ? 'current' : ''}">
             <div class="item-icon">${leftIcon}</div>
             <div class="item-left">
-              <span class="timeline-time">${slot.start} — ${slot.end}</span>
+              <span class="timeline-time">${timeDisplay}</span>
             </div>
             ${badgeContent}
           </div>
