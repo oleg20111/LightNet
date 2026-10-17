@@ -120,6 +120,7 @@ function saveSettings(settings) {
 async function sendTelegramNotification(text) {
   const cfg = getSettings();
   if (!cfg.telegramEnabled || !cfg.telegramBotToken || !cfg.telegramChatId) {
+    console.log('[Telegram Notify] Сповіщення вимкнені або не заповнені токен/чат');
     return;
   }
   try {
@@ -128,7 +129,8 @@ async function sendTelegramNotification(text) {
       chat_id: cfg.telegramChatId,
       text: text,
       parse_mode: 'HTML'
-    }, { timeout: 6000 });
+    }, { timeout: 8000 });
+    console.log('[Telegram Notify] Сповіщення успішно надіслано в Telegram');
   } catch (err) {
     console.error('[Telegram Notify] Помилка відправки:', err.response?.data?.description || err.message);
   }
@@ -382,13 +384,19 @@ app.post('/api/feedback', async (req, res) => {
   list.unshift(newFeedback);
   saveFeedbacks(list);
 
+  // Формуємо текст для Telegram
   const tgText = `⚡ <b>Новий відгук на LightNet!</b>\n\n` +
                  `👤 <b>Ім'я:</b> ${newFeedback.name}\n` +
                  `📧 <b>Email:</b> ${newFeedback.email || 'Не вказано'}\n` +
                  `💬 <b>Повідомлення:</b>\n${newFeedback.message}\n\n` +
                  `🕒 <i>${new Date().toLocaleString('uk-UA')}</i>`;
 
-  sendTelegramNotification(tgText);
+  // Обов'язково очікуємо результат відправки через try/catch
+  try {
+    await sendTelegramNotification(tgText);
+  } catch (err) {
+    console.error('[Feedback Telegram Error]:', err.message);
+  }
 
   res.json({ success: true, message: 'Дякуємо за ваш відгук!' });
 });
