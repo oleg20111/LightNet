@@ -11,6 +11,7 @@ app.use(express.static('public'));
 
 const PRESETS_FILE = path.join(__dirname, 'presets.json');
 const FEEDBACKS_FILE = path.join(__dirname, 'feedbacks.json');
+const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const GOOGLE_SHEET_URL = process.env.GOOGLE_SHEET_URL || 'https://docs.google.com/spreadsheets/d/1mGpGXgSFFVfkrO8gmGHhvdIkI_Yg94oi68QL-OULGYM/edit?gid=1623407110#gid=1623407110';
@@ -95,7 +96,44 @@ function saveFeedbacks(feedbacks) {
   fs.writeFileSync(FEEDBACKS_FILE, JSON.stringify(feedbacks, null, 2), 'utf-8');
 }
 
-// Формування посилання CSV експорту
+function getSettings() {
+  try {
+    if (!fs.existsSync(SETTINGS_FILE)) {
+      const defaultSettings = {
+        telegramEnabled: false,
+        telegramBotToken: '',
+        telegramChatId: ''
+      };
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2), 'utf-8');
+      return defaultSettings;
+    }
+    return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+  } catch (e) {
+    return { telegramEnabled: false, telegramBotToken: '', telegramChatId: '' };
+  }
+}
+
+function saveSettings(settings) {
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+}
+
+async function sendTelegramNotification(text) {
+  const cfg = getSettings();
+  if (!cfg.telegramEnabled || !cfg.telegramBotToken || !cfg.telegramChatId) {
+    return;
+  }
+  try {
+    const url = `https://api.telegram.org/bot${cfg.telegramBotToken}/sendMessage`;
+    await axios.post(url, {
+      chat_id: cfg.telegramChatId,
+      text: text,
+      parse_mode: 'HTML'
+    }, { timeout: 6000 });
+  } catch (err) {
+    console.error('[Telegram Notify] Помилка відправки:', err.response?.data?.description || err.message);
+  }
+}
+
 function getDirectCsvUrl(url) {
   if (!url) return '';
   if (url.includes('/pub?') && url.includes('output=csv')) return url;
@@ -111,7 +149,6 @@ function getDirectCsvUrl(url) {
   return `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${gid}`;
 }
 
-// Парсер CSV
 function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
   return lines.map(line => {
@@ -134,16 +171,14 @@ function parseCSV(text) {
   });
 }
 
-// Кеш таблиці
 let scheduleDb = {
   today: {},
   tomorrow: {},
   metaText: '',
-  sourceChannel: 't.me/poltavska_bezsvitla',
+  sourceChannel: 'https://t.me/poltavska_bezsvitla',
   lastUpdatedTime: null
 };
 
-// Зсув 30 хвилин назад для "жовтої зони": "02:30" -> "02:00"
 function getEffectiveEndTime(endStr) {
   if (endStr.endsWith(':30')) {
     const [h] = endStr.split(':').map(Number);
@@ -165,7 +200,6 @@ async function syncSheet() {
     let metaUpdated = '';
     let sourceLink = 'https://t.me/poltavska_bezsvitla';
 
-    // Рядок 2 зі скріншоту: "Обновлено: 17.10.2026 17:12:01 | Источник: t.me/poltavska_bezsvitla"
     for (let r = 0; r < Math.min(4, rows.length); r++) {
       const textRow = rows[r].join(' ');
       if (textRow.includes('Обновлено') || textRow.includes('Оновлено')) {
@@ -194,12 +228,10 @@ async function syncSheet() {
         continue;
       }
 
-      // Якщо в секції "Завтра" стоїть повідомлення про очікування публікації
       if (currentSection === 'tomorrow' && (rowStr.includes('пока не опубликован') || rowStr.includes('Ожидается публикация'))) {
         continue;
       }
 
-      // Шукаємо чергу у рядку (Черга 1.1 - 6.2)
       let queueKey = null;
       for (const cell of row) {
         const qm = cell.match(/(?:Черга|Очередь)?\s*([1-6]\.[1-2])/i);
@@ -210,7 +242,6 @@ async function syncSheet() {
       }
       if (!queueKey) continue;
 
-      // Знаходимо періоди відключень (Колонка C або вільний пошук інтервалів)
       const slotMatches = [...rowStr.matchAll(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/g)];
       const parsedSlots = [];
 
@@ -218,16 +249,14 @@ async function syncSheet() {
         const rawStart = m[1];
         const rawEnd = m[2];
 
-        // Головна зміна: 30 хвилин необов'язкові
-        // Якщо 00:00-02:30 -> effectiveEnd = 02:00, hasBuffer = true
         const effectiveEnd = getEffectiveEndTime(rawEnd);
         const hasBuffer = rawEnd.endsWith(':30');
 
         parsedSlots.push({
           start: rawStart,
-          end: effectiveEnd,               // розрахунковий час для таймера
-          rawEnd: rawEnd === '24:00' ? '23:59' : rawEnd, // вихідний час для відображення в дужках
-          hasBuffer,                       // прапорець жовтої зони +30 хв
+          end: effectiveEnd,
+          rawEnd: rawEnd === '24:00' ? '23:59' : rawEnd,
+          hasBuffer,
           status: 'off'
         });
       }
@@ -246,38 +275,15 @@ async function syncSheet() {
       lastUpdatedTime: new Date().toISOString()
     };
 
-    console.log(`[Google Sheets] Таблицю оновлено. Час з таблиці: ${metaUpdated}`);
+    console.log(`[Google Sheets] Базу оновлено з таблиці. Час: ${metaUpdated}`);
   } catch (err) {
     console.error('[Google Sheets] Помилка синхронізації:', err.message);
   }
 }
 
-// Оновлювати кожні 15 хвилин
 setInterval(syncSheet, 15 * 60 * 1000);
 syncSheet();
 
-app.get('/api/status', (req, res) => {
-  const queue = (req.query.queue || '3.2').replace('-', '.');
-  const day = req.query.day || 'today';
-
-  const dayMap = day === 'tomorrow' ? scheduleDb.tomorrow : scheduleDb.today;
-  const rawSlots = dayMap[queue] || [];
-
-  // Формуємо повний 24-годинний таймлайн зі станами "on" та "off"
-  const fullTimeline = generate24hTimeline(rawSlots);
-
-  res.json({
-    queue,
-    day,
-    slots: fullTimeline,
-    metaUpdated: scheduleDb.metaText,
-    sourceUrl: scheduleDb.sourceChannel,
-    rawSourceUrl: GOOGLE_SHEET_URL,
-    lastUpdated: scheduleDb.lastUpdatedTime || new Date().toISOString()
-  });
-});
-
-// Допоміжна функція для побудови повної доби
 function generate24hTimeline(offSlots) {
   if (!offSlots || offSlots.length === 0) return [];
 
@@ -307,7 +313,25 @@ function generate24hTimeline(offSlots) {
   return timeline;
 }
 
-// Пресети
+app.get('/api/status', (req, res) => {
+  const queue = (req.query.queue || '3.2').replace('-', '.');
+  const day = req.query.day || 'today';
+
+  const dayMap = day === 'tomorrow' ? scheduleDb.tomorrow : scheduleDb.today;
+  const rawSlots = dayMap[queue] || [];
+  const fullTimeline = generate24hTimeline(rawSlots);
+
+  res.json({
+    queue,
+    day,
+    slots: fullTimeline,
+    metaUpdated: scheduleDb.metaText,
+    sourceUrl: scheduleDb.sourceChannel,
+    rawSourceUrl: GOOGLE_SHEET_URL,
+    lastUpdated: scheduleDb.lastUpdatedTime || new Date().toISOString()
+  });
+});
+
 app.get('/api/presets', (req, res) => {
   res.json(getPresets());
 });
@@ -336,24 +360,36 @@ app.post('/api/admin/presets', (req, res) => {
     savePresets(presets);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Помилка збереження' });
+    res.status(500).json({ error: 'Помилка збереження файлу' });
   }
 });
 
-app.post('/api/feedback', (req, res) => {
+app.post('/api/feedback', async (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !message) {
     return res.status(400).json({ error: "Будь ласка, заповніть ім'я та повідомлення" });
   }
+
   const list = getFeedbacks();
-  list.unshift({
+  const newFeedback = {
     id: Date.now().toString(),
     name: name.trim().slice(0, 100),
     email: (email || '').trim().slice(0, 150),
     message: message.trim().slice(0, 1500),
     createdAt: new Date().toISOString()
-  });
+  };
+
+  list.unshift(newFeedback);
   saveFeedbacks(list);
+
+  const tgText = `⚡ <b>Новий відгук на LightNet!</b>\n\n` +
+                 `👤 <b>Ім'я:</b> ${newFeedback.name}\n` +
+                 `📧 <b>Email:</b> ${newFeedback.email || 'Не вказано'}\n` +
+                 `💬 <b>Повідомлення:</b>\n${newFeedback.message}\n\n` +
+                 `🕒 <i>${new Date().toLocaleString('uk-UA')}</i>`;
+
+  sendTelegramNotification(tgText);
+
   res.json({ success: true, message: 'Дякуємо за ваш відгук!' });
 });
 
@@ -363,6 +399,45 @@ app.post('/api/admin/feedbacks', (req, res) => {
     return res.status(401).json({ error: 'Доступ заборонено' });
   }
   res.json({ feedbacks: getFeedbacks() });
+});
+
+app.post('/api/admin/settings', (req, res) => {
+  const { password } = req.body;
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Доступ заборонено' });
+  }
+  res.json({ settings: getSettings() });
+});
+
+app.post('/api/admin/settings/save', (req, res) => {
+  const { password, settings } = req.body;
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Доступ заборонено' });
+  }
+  try {
+    saveSettings(settings);
+    res.json({ success: true, message: 'Налаштування успішно збережено' });
+  } catch (e) {
+    res.status(500).json({ error: 'Помилка збереження налаштувань' });
+  }
+});
+
+app.post('/api/admin/settings/test-telegram', async (req, res) => {
+  const { password, botToken, chatId } = req.body;
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Доступ заборонено' });
+  }
+  try {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    await axios.post(url, {
+      chat_id: chatId,
+      text: '🔔 <b>LightNet</b>: Тестове сповіщення успішно надіслано в Telegram!',
+      parse_mode: 'HTML'
+    }, { timeout: 6000 });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.response?.data?.description || 'Не вдалося надіслати. Перевірте токен і Chat ID' });
+  }
 });
 
 const PORT = process.env.PORT || 3000;

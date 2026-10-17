@@ -171,7 +171,7 @@
       top: 24px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
 
     .monitor-screen-wrapper {
@@ -245,8 +245,8 @@
     }
 
     .status-msg {
-      margin-top: 10px;
-      font-size: 0.88rem;
+      margin-top: 6px;
+      font-size: 0.85rem;
       font-weight: 600;
     }
     .status-msg.ok { color: #2ed573; }
@@ -268,7 +268,7 @@
   <div id="contentSection" style="display: none; flex-direction: column; gap: 18px;">
     
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h2 style="font-size: 1.3rem;">Налаштування тем (ПК та Мобільні)</h2>
+      <h2 style="font-size: 1.3rem;">Налаштування LightNet</h2>
       <button class="btn" id="saveAllBtn">Зберегти всі зміни для всіх</button>
     </div>
 
@@ -358,6 +358,34 @@
         </div>
 
         <div class="status-msg" id="statusMsg"></div>
+
+        <!-- Налаштування сповіщень у Telegram -->
+        <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 6px 0;" />
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: #fff;">Сповіщення у Telegram</span>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="chkTelegramEnabled" style="width: 18px; height: 18px; accent-color: #2ed573;" />
+            <span style="font-size: 0.85rem; color: #cbd5e1;">Увімкнено</span>
+          </label>
+        </div>
+
+        <div class="ctrl-row">
+          <label>Telegram Bot Token</label>
+          <input type="text" id="inpTgToken" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" />
+        </div>
+
+        <div class="ctrl-row">
+          <label>Chat ID (або @channel_name)</label>
+          <input type="text" id="inpTgChatId" placeholder="987654321 або @my_channel" />
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+          <button type="button" id="btnTestTg" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">Тест відправки</button>
+          <button type="button" class="btn" id="btnSaveTg" style="padding: 6px 14px; font-size: 0.8rem;">Зберегти Telegram</button>
+        </div>
+        <div id="tgStatusMsg" style="font-size: 0.8rem; min-height: 16px;"></div>
+
       </div>
 
       <div class="preview-container">
@@ -367,8 +395,8 @@
             <button id="viewScreenMobile" class="btn" style="padding: 5px 12px; font-size: 0.78rem; background: rgba(255,255,255,0.15); color: #fff;">Телефон (9:16)</button>
           </div>
           <div style="display: flex; gap: 8px;">
-            <button id="previewModeGreen" style="background: rgba(46, 213, 115, 0.2); color:#2ed573; border: 1px solid rgba(46,213,115,0.4); border-radius:6px; padding:4px 8px; font-size:0.75rem; cursor:pointer;">Режим "Світло є"</button>
-            <button id="previewModeRed" style="background: rgba(255, 71, 87, 0.2); color:#ff4757; border: 1px solid rgba(255,71,87,0.4); border-radius:6px; padding:4px 8px; font-size:0.75rem; cursor:pointer;">Режим "Відключення"</button>
+            <button id="previewModeGreen" style="background: rgba(46, 213, 115, 0.2); color:#2ed573; border: 1px solid rgba(46,213,115,0.4); border-radius:6px; padding:4px 8px; font-size:0.75rem; cursor:pointer;">"Світло є"</button>
+            <button id="previewModeRed" style="background: rgba(255, 71, 87, 0.2); color:#ff4757; border: 1px solid rgba(255,71,87,0.4); border-radius:6px; padding:4px 8px; font-size:0.75rem; cursor:pointer;">"Відключення"</button>
           </div>
         </div>
 
@@ -381,18 +409,18 @@
             <div id="prevStage" class="preview-stage">
               <div id="prevCaption" class="preview-caption">ДО ВІДКЛЮЧЕННЯ СВІТЛА</div>
               <div id="prevTimer" class="preview-timer">01:38:10</div>
-              <div id="prevHint" class="preview-hint">Період без світла: 22:30 — 23:59</div>
+              <div id="prevHint" class="preview-hint">Період без світла: 20:00 — 22:00 (до 22:30 можл.)</div>
             </div>
           </div>
         </div>
 
-        <div style="background: #141722; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; margin-top: 10px;">
+        <div style="background: #141722; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span style="font-size: 0.9rem; font-weight: 700; color: #fff;">Отримані відгуки від користувачів</span>
+            <span style="font-size: 0.9rem; font-weight: 700; color: #fff;">Отримані відгуки користувачів</span>
             <button class="btn" id="refreshFeedbacksBtn" style="padding: 5px 10px; font-size: 0.75rem;">Оновити</button>
           </div>
           <div id="feedbacksContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
-            <div style="color:#8391a5; font-size:0.8rem;">Натисніть «Оновити» для перегляду відгуків</div>
+            <div style="color:#8391a5; font-size:0.8rem;">Натисніть «Оновити» для завантаження відгуків</div>
           </div>
         </div>
       </div>
@@ -437,6 +465,11 @@
   const prevTimer = document.getElementById('prevTimer');
   const prevHint = document.getElementById('prevHint');
 
+  const chkTelegramEnabled = document.getElementById('chkTelegramEnabled');
+  const inpTgToken = document.getElementById('inpTgToken');
+  const inpTgChatId = document.getElementById('inpTgChatId');
+  const tgStatusMsg = document.getElementById('tgStatusMsg');
+
   document.getElementById('loginBtn').onclick = async () => {
     const pwd = document.getElementById('adminPassInput').value.trim();
     if (!pwd) return;
@@ -456,6 +489,7 @@
         renderTabs();
         selectPreset(0);
         loadFeedbacks();
+        loadSettings();
       } else {
         loginError.textContent = data.error || 'Невірний пароль';
       }
@@ -678,7 +712,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        statusMsg.textContent = 'Всі налаштування успішно збережено для всіх користувачів!';
+        statusMsg.textContent = 'Всі теми успішно збережено!';
         statusMsg.className = 'status-msg ok';
       } else {
         statusMsg.textContent = data.error || 'Помилка збереження';
@@ -709,7 +743,7 @@
         <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px;">
           <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.8rem;">
             <strong style="color:#2ed573;">${item.name}</strong>
-            <span style="color:#8391a5; font-size:0.75rem;">${new Date(item.createdAt).toLocaleString()}</span>
+            <span style="color:#8391a5; font-size:0.75rem;">${new Date(item.createdAt).toLocaleString('uk-UA')}</span>
           </div>
           ${item.email ? `<div style="font-size:0.75rem; color:#48dbfb; margin-bottom:4px;">${item.email}</div>` : ''}
           <div style="font-size:0.82rem; color:#f1f2f6; white-space:pre-wrap;">${item.message}</div>
@@ -721,6 +755,87 @@
   }
 
   document.getElementById('refreshFeedbacksBtn').onclick = loadFeedbacks;
+
+  async function loadSettings() {
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: currentPassword })
+      });
+      const data = await res.json();
+      if (data.settings) {
+        chkTelegramEnabled.checked = data.settings.telegramEnabled || false;
+        inpTgToken.value = data.settings.telegramBotToken || '';
+        inpTgChatId.value = data.settings.telegramChatId || '';
+      }
+    } catch (e) {}
+  }
+
+  document.getElementById('btnSaveTg').onclick = async () => {
+    tgStatusMsg.style.color = '#ffa502';
+    tgStatusMsg.textContent = 'Збереження...';
+    try {
+      const res = await fetch('/api/admin/settings/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: currentPassword,
+          settings: {
+            telegramEnabled: chkTelegramEnabled.checked,
+            telegramBotToken: inpTgToken.value.trim(),
+            telegramChatId: inpTgChatId.value.trim()
+          }
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        tgStatusMsg.style.color = '#2ed573';
+        tgStatusMsg.textContent = 'Налаштування Telegram збережено!';
+      } else {
+        tgStatusMsg.style.color = '#ff4757';
+        tgStatusMsg.textContent = data.error || 'Помилка збереження';
+      }
+    } catch (e) {
+      tgStatusMsg.style.color = '#ff4757';
+      tgStatusMsg.textContent = 'Помилка з’єднання';
+    }
+    setTimeout(() => { tgStatusMsg.textContent = ''; }, 4000);
+  };
+
+  document.getElementById('btnTestTg').onclick = async () => {
+    const token = inpTgToken.value.trim();
+    const chat = inpTgChatId.value.trim();
+    if (!token || !chat) {
+      tgStatusMsg.style.color = '#ff4757';
+      tgStatusMsg.textContent = 'Введіть токен і Chat ID перед тестом';
+      return;
+    }
+    tgStatusMsg.style.color = '#ffa502';
+    tgStatusMsg.textContent = 'Відправка тестового повідомлення...';
+    try {
+      const res = await fetch('/api/admin/settings/test-telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: currentPassword,
+          botToken: token,
+          chatId: chat
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        tgStatusMsg.style.color = '#2ed573';
+        tgStatusMsg.textContent = 'Тестове повідомлення надіслано в Telegram!';
+      } else {
+        tgStatusMsg.style.color = '#ff4757';
+        tgStatusMsg.textContent = data.error || 'Помилка відправки';
+      }
+    } catch (e) {
+      tgStatusMsg.style.color = '#ff4757';
+      tgStatusMsg.textContent = 'Помилка мережі';
+    }
+  };
 </script>
 </body>
 </html>
