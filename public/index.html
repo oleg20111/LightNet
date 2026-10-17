@@ -74,7 +74,6 @@
       z-index: 2;
     }
 
-    /* Шкала часу з горизонтальним скролінгом */
     .timeline-backdrop-container {
       position: absolute;
       bottom: 78px;
@@ -125,7 +124,6 @@
       background: rgba(255, 255, 255, 0.18);
     }
 
-    /* Гарантоване відключення: оранжевий контур */
     .timeline-block-off {
       position: absolute;
       bottom: 11px;
@@ -145,7 +143,6 @@
       box-shadow: 0 2px 8px rgba(255, 165, 2, 0.2);
     }
 
-    /* Сіра зона можливих 30 хвилин */
     .timeline-block-buffer {
       position: absolute;
       bottom: 11px;
@@ -504,7 +501,6 @@
       align-items: center;
     }
 
-    /* Надійна кнопка закриття */
     .close-sheet-btn {
       display: flex !important;
       background: rgba(255, 255, 255, 0.12);
@@ -1053,7 +1049,13 @@
         text-shadow: none !important;
       }
 
-      /* Повністю ховаємо ручки, щоб не перекривали кнопки закриття */
+      /* Отключаем hover на мобильных, чтобы шторка не залипала при клике на крестик */
+      .drawer-container:hover,
+      .bottom-bg-drawer:hover,
+      .top-drawer-container:hover {
+        transform: none;
+      }
+
       .drawer-handle,
       .bottom-drawer-handle {
         display: none !important;
@@ -1063,11 +1065,23 @@
       .drawer-container,
       .bottom-bg-drawer {
         pointer-events: none;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 82vh;
+        height: 82dvh;
+        transform: translateY(105%) !important;
+        flex-direction: column;
+        border-radius: 24px 24px 0 0;
+        transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
       }
 
       .drawer-container.open,
       .bottom-bg-drawer.open {
         pointer-events: auto;
+        transform: translateY(0) !important;
         z-index: 60;
       }
 
@@ -1076,6 +1090,21 @@
         pointer-events: auto;
         position: relative;
         z-index: 61;
+        width: 100%;
+        border-radius: 24px 24px 0 0;
+      }
+
+      .schedule-panel {
+        border-left: none;
+        border-top: 1px solid var(--border);
+        padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+      }
+
+      .bg-controls-panel {
+        border-bottom: none;
+        max-height: 82vh;
+        max-height: 82dvh;
+        padding: 18px 16px calc(30px + env(safe-area-inset-bottom));
       }
 
       .close-sheet-btn {
@@ -1085,6 +1114,8 @@
         cursor: pointer !important;
         pointer-events: auto !important;
         touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
         width: 40px !important;
         height: 40px !important;
         min-width: 40px !important;
@@ -1147,52 +1178,6 @@
       .update-status-pill {
         padding: 5px 12px;
         font-size: 0.74rem;
-      }
-
-      .drawer-container {
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        height: 82vh;
-        height: 82dvh;
-        transform: translateY(105%);
-        flex-direction: column;
-        border-radius: 24px 24px 0 0;
-        transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
-      }
-
-      .drawer-container.open {
-        transform: translateY(0);
-      }
-
-      .schedule-panel {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid var(--border);
-        border-radius: 24px 24px 0 0;
-        padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
-      }
-
-      .bottom-bg-drawer {
-        right: 0;
-        left: 0;
-        width: 100%;
-        transform: translateY(105%);
-        transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
-      }
-
-      .bottom-bg-drawer.open {
-        transform: translateY(0);
-      }
-
-      .bg-controls-panel {
-        width: 100%;
-        border-radius: 24px 24px 0 0;
-        max-height: 82vh;
-        max-height: 82dvh;
-        padding: 18px 16px calc(30px + env(safe-area-inset-bottom));
       }
 
       .theme-grid {
@@ -1261,7 +1246,6 @@
 
   <div class="bottom-ambient-glow"></div>
 
-  <!-- Шкала часу -->
   <div class="timeline-backdrop-container" id="bottomTimelineBar">
     <div class="timeline-ruler-wrap" id="timelineTrack">
       <div class="timeline-axis-line"></div>
@@ -1679,25 +1663,25 @@
     document.getElementById('scheduleHandle').onclick = () => scheduleDrawer.classList.toggle('open');
     document.getElementById('bgDrawerHandle').onclick = () => bgDrawer.classList.toggle('open');
 
-    // Надійна функція закриття для миші та сенсорних екранів
-    function setupCloseButton(buttonId, targetElement) {
+    // Пряме та надійне закриття шторок
+    function bindDrawerClose(buttonId, drawerElement) {
       const btn = document.getElementById(buttonId);
-      if (!btn || !targetElement) return;
+      if (!btn || !drawerElement) return;
 
-      const closeHandler = (e) => {
+      const closeAction = (e) => {
         if (e) {
           e.preventDefault();
           e.stopPropagation();
         }
-        targetElement.classList.remove('open');
+        drawerElement.classList.remove('open');
       };
 
-      btn.addEventListener('pointerdown', closeHandler, { passive: false });
-      btn.addEventListener('click', closeHandler);
+      btn.onclick = closeAction;
+      btn.ontouchend = closeAction;
     }
 
-    setupCloseButton('closeScheduleBtn', scheduleDrawer);
-    setupCloseButton('closeBgBtn', bgDrawer);
+    bindDrawerClose('closeScheduleBtn', scheduleDrawer);
+    bindDrawerClose('closeBgBtn', bgDrawer);
 
     function openAboutModal() {
       aboutModal.style.display = 'flex';
@@ -1714,11 +1698,16 @@
 
     const modalCloseBtn = document.getElementById('closeModalBtn');
     if (modalCloseBtn) {
-      modalCloseBtn.addEventListener('pointerdown', (e) => {
+      modalCloseBtn.onclick = (e) => {
         e.preventDefault();
+        e.stopPropagation();
         closeAboutModal();
-      });
-      modalCloseBtn.addEventListener('click', closeAboutModal);
+      };
+      modalCloseBtn.ontouchend = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAboutModal();
+      };
     }
 
     document.getElementById('openModalBtn').onclick = openAboutModal;
@@ -1732,24 +1721,6 @@
       scheduleDrawer.classList.remove('open');
       bgDrawer.classList.toggle('open');
     };
-
-    // Закриття панелі при кліку за її межами
-    document.addEventListener('pointerdown', (e) => {
-      if (scheduleDrawer.classList.contains('open')) {
-        const panel = scheduleDrawer.querySelector('.schedule-panel');
-        const dockBtn = document.getElementById('dockScheduleBtn');
-        if (panel && !panel.contains(e.target) && dockBtn && !dockBtn.contains(e.target)) {
-          scheduleDrawer.classList.remove('open');
-        }
-      }
-      if (bgDrawer.classList.contains('open')) {
-        const panel = bgDrawer.querySelector('.bg-controls-panel');
-        const dockBtn = document.getElementById('dockStyleBtn');
-        if (panel && !panel.contains(e.target) && dockBtn && !dockBtn.contains(e.target)) {
-          bgDrawer.classList.remove('open');
-        }
-      }
-    });
 
     document.querySelectorAll('.pill-select-wrapper').forEach(wrapper => {
       wrapper.addEventListener('click', (e) => {
@@ -2184,7 +2155,6 @@
       return h * 60 + (m || 0);
     }
 
-    // Линейка со всеми 24 часами
     function buildTimelineRuler() {
       if (!timelineTicksLayer || !timelineHoursLabels) return;
       timelineTicksLayer.innerHTML = '';
@@ -2345,7 +2315,6 @@
       }).join('');
     }
 
-    // Отрисовка блоків на шкалі часу
     function renderTimelineBar() {
       if (!timelineBlocksContainer) return;
       timelineBlocksContainer.innerHTML = '';
@@ -2383,7 +2352,6 @@
           endMin = rawEndMin - 30;
         }
 
-        // Блок точного вимкнення
         if (endMin > startMin) {
           const leftPercent = (startMin / totalMinutes) * 100;
           const widthPercent = ((endMin - startMin) / totalMinutes) * 100;
@@ -2398,7 +2366,6 @@
           timelineBlocksContainer.appendChild(block);
         }
 
-        // Блок 30 хвилин можливого відключення (сірий контур)
         if (slot.hasBuffer && rawEndMin > endMin) {
           const bufLeftPercent = (endMin / totalMinutes) * 100;
           const bufWidthPercent = ((rawEndMin - endMin) / totalMinutes) * 100;
