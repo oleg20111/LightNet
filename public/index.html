@@ -74,7 +74,7 @@
       z-index: 2;
     }
 
-    /* Шкала времени с горизонтальным скроллингом на мобильных */
+    /* Шкала часу з горизонтальним скролінгом */
     .timeline-backdrop-container {
       position: absolute;
       bottom: 78px;
@@ -125,7 +125,7 @@
       background: rgba(255, 255, 255, 0.18);
     }
 
-    /* Гарантированное отключение */
+    /* Гарантоване відключення: оранжевий контур */
     .timeline-block-off {
       position: absolute;
       bottom: 11px;
@@ -145,7 +145,7 @@
       box-shadow: 0 2px 8px rgba(255, 165, 2, 0.2);
     }
 
-    /* Серая зона возможных 30 минут */
+    /* Сіра зона можливих 30 хвилин */
     .timeline-block-buffer {
       position: absolute;
       bottom: 11px;
@@ -440,10 +440,16 @@
       transition: color 0.2s;
     }
 
-    .drawer-container,
-  .bottom-bg-drawer {
-    pointer-events: none; /* сам невидимый контейнер не блокирует клики */
-  }
+    .drawer-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      z-index: 30;
+      display: flex;
+      transform: translateX(calc(100% - 24px));
+      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
 
     .drawer-container:hover,
     .drawer-container.open {
@@ -498,21 +504,22 @@
       align-items: center;
     }
 
-    /* Надежные кнопки закрытия панелей */
+    /* Надійна кнопка закриття */
     .close-sheet-btn {
       display: flex !important;
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid var(--border);
       color: #cbd5e1;
-      width: 36px;
-      height: 36px;
-      min-width: 36px;
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
       border-radius: 50%;
       font-size: 1.2rem;
       cursor: pointer;
       align-items: center;
       justify-content: center;
-      z-index: 50;
+      z-index: 100 !important;
+      pointer-events: auto !important;
       touch-action: manipulation;
     }
 
@@ -1046,7 +1053,44 @@
         text-shadow: none !important;
       }
 
-      /* Шкала на мобильных становится легко прокручиваемой */
+      /* Повністю ховаємо ручки, щоб не перекривали кнопки закриття */
+      .drawer-handle,
+      .bottom-drawer-handle {
+        display: none !important;
+        pointer-events: none !important;
+      }
+
+      .drawer-container,
+      .bottom-bg-drawer {
+        pointer-events: none;
+      }
+
+      .drawer-container.open,
+      .bottom-bg-drawer.open {
+        pointer-events: auto;
+        z-index: 60;
+      }
+
+      .schedule-panel,
+      .bg-controls-panel {
+        pointer-events: auto;
+        position: relative;
+        z-index: 61;
+      }
+
+      .close-sheet-btn {
+        display: flex !important;
+        position: relative;
+        z-index: 100 !important;
+        cursor: pointer !important;
+        pointer-events: auto !important;
+        touch-action: manipulation;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        background: rgba(255, 255, 255, 0.16) !important;
+      }
+
       .timeline-backdrop-container {
         height: 68px;
         bottom: 114px;
@@ -1105,12 +1149,6 @@
         font-size: 0.74rem;
       }
 
-      .drawer-handle,
-      .bottom-drawer-handle {
-        display: none !important;
-        pointer-events: none !important;
-      }
-
       .drawer-container {
         top: auto;
         bottom: 0;
@@ -1125,18 +1163,37 @@
         transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
       }
 
-      .schedule-panel,
-  .bg-controls-panel {
-    pointer-events: auto;
-    position: relative;
-    z-index: 61;
-  }
+      .drawer-container.open {
+        transform: translateY(0);
+      }
 
-      .drawer-container.open,
-  .bottom-bg-drawer.open {
-    pointer-events: auto;
-    z-index: 60;
-  }
+      .schedule-panel {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        border-radius: 24px 24px 0 0;
+        padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+      }
+
+      .bottom-bg-drawer {
+        right: 0;
+        left: 0;
+        width: 100%;
+        transform: translateY(105%);
+        transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+      }
+
+      .bottom-bg-drawer.open {
+        transform: translateY(0);
+      }
+
+      .bg-controls-panel {
+        width: 100%;
+        border-radius: 24px 24px 0 0;
+        max-height: 82vh;
+        max-height: 82dvh;
+        padding: 18px 16px calc(30px + env(safe-area-inset-bottom));
+      }
 
       .theme-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -1191,22 +1248,6 @@
         background: rgba(255, 255, 255, 0.12);
         color: #fff;
       }
-
-      .close-sheet-btn {
-    display: flex !important;
-    position: relative;
-    z-index: 100 !important;
-    cursor: pointer !important;
-    pointer-events: auto !important;
-    touch-action: manipulation;
-    user-select: none;
-    -webkit-user-select: none;
-    padding: 6px;
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    background: rgba(255, 255, 255, 0.16) !important;
-  }
     }
   </style>
 </head>
@@ -1220,7 +1261,7 @@
 
   <div class="bottom-ambient-glow"></div>
 
-  <!-- Шкала времени (поднята выше блока "Оновлено") -->
+  <!-- Шкала часу -->
   <div class="timeline-backdrop-container" id="bottomTimelineBar">
     <div class="timeline-ruler-wrap" id="timelineTrack">
       <div class="timeline-axis-line"></div>
@@ -1535,43 +1576,6 @@
       });
     }
 
-    // Надежное закрытие шторки с явным снятием класса open
-    function setupCloseButton(buttonId, targetElement) {
-      const btn = document.getElementById(buttonId);
-      if (!btn || !targetElement) return;
-
-      const closeHandler = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        targetElement.classList.remove('open');
-      };
-
-      // pointerdown срабатывает раньше всех на мыши, стилусе и тач-экранах
-      btn.addEventListener('pointerdown', closeHandler, { passive: false });
-      btn.addEventListener('click', closeHandler);
-    }
-
-    // Привязываем кнопки к панелям
-    setupCloseButton('closeScheduleBtn', scheduleDrawer);
-    setupCloseButton('closeBgBtn', bgDrawer);
-    setupCloseButton('closeModalBtn', closeAboutModal);
-
-    // Дополнительно: закрытие при клике мимо открытой панели
-    document.addEventListener('pointerdown', (e) => {
-      if (scheduleDrawer.classList.contains('open')) {
-        if (!scheduleDrawer.querySelector('.schedule-panel').contains(e.target) && !document.getElementById('dockScheduleBtn').contains(e.target)) {
-          scheduleDrawer.classList.remove('open');
-        }
-      }
-      if (bgDrawer.classList.contains('open')) {
-        if (!bgDrawer.querySelector('.bg-controls-panel').contains(e.target) && !document.getElementById('dockStyleBtn').contains(e.target)) {
-          bgDrawer.classList.remove('open');
-        }
-      }
-    });
-
     async function saveMediaBlob(blob, type, key = 'saved_media_file') {
       const db = await openMediaDB();
       return new Promise((resolve, reject) => {
@@ -1675,33 +1679,25 @@
     document.getElementById('scheduleHandle').onclick = () => scheduleDrawer.classList.toggle('open');
     document.getElementById('bgDrawerHandle').onclick = () => bgDrawer.classList.toggle('open');
 
-    // Надежное закрытие любого меню для сенсорных экранов
-    function bindTouchClose(btnId, closeAction) {
-      const btn = document.getElementById(btnId);
-      if (!btn) return;
+    // Надійна функція закриття для миші та сенсорних екранів
+    function setupCloseButton(buttonId, targetElement) {
+      const btn = document.getElementById(buttonId);
+      if (!btn || !targetElement) return;
 
-      const trigger = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        closeAction();
+      const closeHandler = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        targetElement.classList.remove('open');
       };
 
-      btn.addEventListener('click', trigger);
-      btn.addEventListener('touchend', trigger);
+      btn.addEventListener('pointerdown', closeHandler, { passive: false });
+      btn.addEventListener('click', closeHandler);
     }
 
-    bindTouchClose('closeScheduleBtn', () => scheduleDrawer.classList.remove('open'));
-    bindTouchClose('closeBgBtn', () => bgDrawer.classList.remove('open'));
-    bindTouchClose('closeModalBtn', closeAboutModal);
-
-    document.getElementById('dockScheduleBtn').onclick = () => {
-      bgDrawer.classList.remove('open');
-      scheduleDrawer.classList.toggle('open');
-    };
-    document.getElementById('dockStyleBtn').onclick = () => {
-      scheduleDrawer.classList.remove('open');
-      bgDrawer.classList.toggle('open');
-    };
+    setupCloseButton('closeScheduleBtn', scheduleDrawer);
+    setupCloseButton('closeBgBtn', bgDrawer);
 
     function openAboutModal() {
       aboutModal.style.display = 'flex';
@@ -1716,8 +1712,44 @@
       }
     }
 
+    const modalCloseBtn = document.getElementById('closeModalBtn');
+    if (modalCloseBtn) {
+      modalCloseBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        closeAboutModal();
+      });
+      modalCloseBtn.addEventListener('click', closeAboutModal);
+    }
+
     document.getElementById('openModalBtn').onclick = openAboutModal;
     document.getElementById('dockAboutBtn').onclick = openAboutModal;
+
+    document.getElementById('dockScheduleBtn').onclick = () => {
+      bgDrawer.classList.remove('open');
+      scheduleDrawer.classList.toggle('open');
+    };
+    document.getElementById('dockStyleBtn').onclick = () => {
+      scheduleDrawer.classList.remove('open');
+      bgDrawer.classList.toggle('open');
+    };
+
+    // Закриття панелі при кліку за її межами
+    document.addEventListener('pointerdown', (e) => {
+      if (scheduleDrawer.classList.contains('open')) {
+        const panel = scheduleDrawer.querySelector('.schedule-panel');
+        const dockBtn = document.getElementById('dockScheduleBtn');
+        if (panel && !panel.contains(e.target) && dockBtn && !dockBtn.contains(e.target)) {
+          scheduleDrawer.classList.remove('open');
+        }
+      }
+      if (bgDrawer.classList.contains('open')) {
+        const panel = bgDrawer.querySelector('.bg-controls-panel');
+        const dockBtn = document.getElementById('dockStyleBtn');
+        if (panel && !panel.contains(e.target) && dockBtn && !dockBtn.contains(e.target)) {
+          bgDrawer.classList.remove('open');
+        }
+      }
+    });
 
     document.querySelectorAll('.pill-select-wrapper').forEach(wrapper => {
       wrapper.addEventListener('click', (e) => {
@@ -2187,7 +2219,6 @@
 
     buildTimelineRuler();
 
-    // Авто-скролл на текущее время при входе
     function scrollToCurrentTime() {
       if (!bottomTimelineBar || !timelineCursor) return;
       const cursorLeft = timelineCursor.offsetLeft;
@@ -2314,7 +2345,7 @@
       }).join('');
     }
 
-    // Отрисовка блоков и буферов на шкале
+    // Отрисовка блоків на шкалі часу
     function renderTimelineBar() {
       if (!timelineBlocksContainer) return;
       timelineBlocksContainer.innerHTML = '';
@@ -2352,7 +2383,7 @@
           endMin = rawEndMin - 30;
         }
 
-        // Блок гарантированного отключения
+        // Блок точного вимкнення
         if (endMin > startMin) {
           const leftPercent = (startMin / totalMinutes) * 100;
           const widthPercent = ((endMin - startMin) / totalMinutes) * 100;
@@ -2367,7 +2398,7 @@
           timelineBlocksContainer.appendChild(block);
         }
 
-        // Серый контур с серой лампочкой на 30 минут
+        // Блок 30 хвилин можливого відключення (сірий контур)
         if (slot.hasBuffer && rawEndMin > endMin) {
           const bufLeftPercent = (endMin / totalMinutes) * 100;
           const bufWidthPercent = ((rawEndMin - endMin) / totalMinutes) * 100;

@@ -27,7 +27,7 @@ const DEFAULT_PRESETS = [
     greenColor: '#48dbfb',
     redColor: '#ff4757',
     dim: 55,
-    pos: 72,
+    pos: 68,
     scale: 100,
     glowEnabled: true,
     glowRadius: 25
@@ -42,7 +42,7 @@ const DEFAULT_PRESETS = [
     greenColor: '#38ef7d',
     redColor: '#55d6aa',
     dim: 45,
-    pos: 50,
+    pos: 68,
     scale: 100,
     glowEnabled: true,
     glowRadius: 25
@@ -57,12 +57,18 @@ const DEFAULT_PRESETS = [
     greenColor: '#2ed573',
     redColor: '#ff4757',
     dim: 65,
-    pos: 50,
+    pos: 68,
     scale: 100,
     glowEnabled: true,
     glowRadius: 25
   }
 ];
+
+function timeToMinutes(str) {
+  if (!str) return 0;
+  const [h, m] = str.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
 
 function getPresets() {
   try {
@@ -113,7 +119,7 @@ function getSettings() {
       };
     }
   } catch (e) {
-    console.error('[Settings] Помилка читання файлу налаштувань, використовуємо змінні оточення');
+    console.error('[Settings] Помилка читання файлу налаштувань, використовуємо змінні середовища');
   }
 
   return envDefaults;
@@ -135,7 +141,7 @@ async function sendTelegramNotification(text) {
       text: text,
       parse_mode: 'HTML'
     }, { timeout: 8000 });
-    console.log('[Telegram Notify] Сповіщення надіслано в Telegram');
+    console.log('[Telegram Notify] Повідомлення надіслано в Telegram');
   } catch (err) {
     console.error('[Telegram Notify] Помилка відправки:', err.response?.data?.description || err.message);
   }
@@ -185,15 +191,6 @@ let scheduleDb = {
   sourceChannel: 'https://t.me/poltavska_bezsvitla',
   lastUpdatedTime: null
 };
-
-function getEffectiveEndTime(endStr) {
-  if (endStr.endsWith(':30')) {
-    const [h] = endStr.split(':').map(Number);
-    return `${h.toString().padStart(2, '0')}:00`;
-  }
-  if (endStr === '24:00') return '23:59';
-  return endStr;
-}
 
 async function syncSheet() {
   const csvUrl = getDirectCsvUrl(GOOGLE_SHEET_URL);
@@ -263,8 +260,6 @@ async function syncSheet() {
         let guaranteedEnd = rawEnd === '24:00' ? '23:59' : rawEnd;
         let hasBuffer = false;
 
-        // Если заканчивается на :30 (14:30, 20:30)
-        // ИЛИ если интервал длится X.5 часов (например, 06:30 - 09:00 = 150 мин, не кратно 60)
         if (rawEnd.endsWith(':30')) {
           hasBuffer = true;
           const [h] = rawEnd.split(':').map(Number);
@@ -309,12 +304,6 @@ async function syncSheet() {
 setInterval(syncSheet, 15 * 60 * 1000);
 syncSheet();
 
-function timeToMinutes(str) {
-  if (!str) return 0;
-  const [h, m] = str.split(':').map(Number);
-  return h * 60 + (m || 0);
-}
-
 function generate24hTimeline(offSlots) {
   if (!offSlots || offSlots.length === 0) return [];
 
@@ -344,7 +333,29 @@ function generate24hTimeline(offSlots) {
   return timeline;
 }
 
-// Запит статусу розкладу
+// Підписка браузерів на Server-Sent Events (SSE)
+let sseClients = [];
+
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  sseClients.push(res);
+
+  req.on('close', () => {
+    sseClients = sseClients.filter(client => client !== res);
+  });
+});
+
+function broadcastScheduleUpdate() {
+  sseClients.forEach(client => {
+    client.write(`data: ${JSON.stringify({ type: 'SCHEDULE_UPDATED' })}\n\n`);
+  });
+}
+
+// Запит статусу
 app.get('/api/status', (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
 
@@ -366,43 +377,18 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Вебхук для виклику з Google Apps Script
+// Вебхук для миттєвого оновлення
 app.post('/api/webhook/sync', async (req, res) => {
   try {
     console.log('[Webhook] Отримано запит на синхронізацію з таблиці');
     await syncSheet();
-    
-    // Сповіщаємо всі відкриті сторінки браузера
     broadcastScheduleUpdate();
-
     res.json({ success: true, message: 'Синхронізацію виконано' });
   } catch (err) {
     console.error('[Webhook Error]:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
-// Зберігаємо підключені браузери для миттєвого пушу
-let sseClients = [];
-
-app.get('/api/events', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
-  sseClients.push(res);
-
-  req.on('close', () => {
-    sseClients = sseClients.filter(client => client !== res);
-  });
-});
-
-function broadcastScheduleUpdate() {
-  sseClients.forEach(client => {
-    client.write(`data: ${JSON.stringify({ type: 'SCHEDULE_UPDATED' })}\n\n`);
-  });
-}
 
 app.get('/api/presets', (req, res) => {
   res.json(getPresets());
